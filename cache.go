@@ -19,9 +19,9 @@ import (
 )
 
 type LRUCache struct {
-	n     int
-	cache map[int]*list.Element //key-int; value-pokazivac na element u listi;
-	list  *list.List            //dvostruko spregnuta lista, bice prikaz tog reda ustv(sadrzace kljuceve?)
+	n     int                   //velicina koja ce se namestati kroz konfiguracioni fajl
+	cache map[int]*list.Element //key-int; value-pokazivac na element u listi(adresa tog elementa);
+	list  *list.List            //dvostruko spregnuta lista, bice prikaz tog reda ustv(sadrzace elemente(parove) koji se sastoje od kljuca i vrednosti)
 }
 
 type Elem struct {
