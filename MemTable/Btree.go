@@ -22,9 +22,9 @@ type Tree struct {
 	numOfData uint
 }
 
-func CreateTree() Tree {
+func CreateTree() *Tree {
 	t := Tree{root: nil, numOfData: 0}
-	return t
+	return &t
 }
 
 // Insertuje na odredjeni index u arrayu, a ove ostale pomeri za jedno mesto desno
