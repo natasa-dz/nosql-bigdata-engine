@@ -15,26 +15,25 @@ da kod sledece pretrage MOZDA prvo ne moramo traziti po disku(bio on alociran za
 
 import (
 	"container/list"
-	"fmt"
 )
 
 type LRUCache struct {
-	n     int                   //velicina koja ce se namestati kroz konfiguracioni fajl
-	cache map[int]*list.Element //key-int; value-pokazivac na element u listi(adresa tog elementa);
-	list  *list.List            //dvostruko spregnuta lista, bice prikaz tog reda ustv(sadrzace elemente(parove) koji se sastoje od kljuca i vrednosti)
+	n     int                      //velicina koja ce se namestati kroz konfiguracioni fajl
+	cache map[string]*list.Element //key-int; value-pokazivac na element u listi(adresa tog elementa);
+	list  *list.List               //dvostruko spregnuta lista, bice prikaz tog reda ustv(sadrzace elemente(parove) koji se sastoje od kljuca i vrednosti)
 }
 
 type Elem struct {
-	key   int
-	value int
+	key   string
+	value []byte
 }
 
 func CreateCache(size int) LRUCache {
-	cache := LRUCache{size, map[int]*list.Element{}, list.New()}
+	cache := LRUCache{size, map[string]*list.Element{}, list.New()}
 	return cache
 }
 
-func (cache *LRUCache) Insert(newValue, key int) {
+func (cache *LRUCache) Insert(newValue []byte, key string) {
 	adrOfExistingElem, ok := cache.cache[key]
 	if ok {
 		cache.list.MoveToFront(adrOfExistingElem)
@@ -51,26 +50,27 @@ func (cache *LRUCache) Insert(newValue, key int) {
 	}
 }
 
-func (cache *LRUCache) Search(key int) int {
+func (cache *LRUCache) Search(key string) []byte {
 	//proveri mapu, ako ima pomeri napred i vrati vrednost, ako nema vrati -1
 	adrOfExistingElem, ok := cache.cache[key]
 	if ok {
 		cache.list.MoveToFront(adrOfExistingElem)
 		return adrOfExistingElem.Value.(*Elem).value
 	}
-	return -1
+	return nil
 }
 
-func main() {
-	c := CreateCache(2)
-	c.Insert(1, 1)
-	c.Insert(2, 2)
-	fmt.Println(c.Search(1))
-	fmt.Println(c.Search(5))
-	c.Insert(3, 3)
-	fmt.Println(c.Search(2))
-	fmt.Println(c.Search(1))
-	c.Insert(5, 5)
-	fmt.Println(c.Search(3))
-
-}
+//func main() {
+//	//TEST dok su bili intovi
+//	c := CreateCache(2)
+//	c.Insert(1, 1)
+//	c.Insert(2, 2)
+//	fmt.Println(c.Search(1))
+//	fmt.Println(c.Search(5))
+//	c.Insert(3, 3)
+//	fmt.Println(c.Search(2))
+//	fmt.Println(c.Search(1))
+//	c.Insert(5, 5)
+//	fmt.Println(c.Search(3))
+//
+//}
