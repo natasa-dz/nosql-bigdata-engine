@@ -1,4 +1,4 @@
-package main
+package MemTable
 
 const q int = 2
 
