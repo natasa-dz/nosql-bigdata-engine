@@ -27,6 +27,10 @@ func CreateTree() *Tree {
 	return &t
 }
 
+func (t *Tree) GetNumOfElements() uint {
+	return t.numOfData
+}
+
 // Insertuje na odredjeni index u arrayu, a ove ostale pomeri za jedno mesto desno
 func (node *Node) InsertDataIntoArray(index int, data Data) {
 	if len(node.keys) == index { //stavljamo ga na kraj
