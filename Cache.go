@@ -35,23 +35,23 @@ func CreateCache(size int) LRUCache {
 
 func (cache *LRUCache) Insert(newValue []byte, key string) {
 	adrOfExistingElem, ok := cache.cache[key]
-	if ok {
-		cache.list.MoveToFront(adrOfExistingElem)
-		adrOfExistingElem.Value.(*Elem).value = newValue
-	} else {
-		if cache.list.Len() == cache.n {
+	if ok { //element je vec u catchu
+		cache.list.MoveToFront(adrOfExistingElem)        //posto je nesto radjeno sa njime pomeri ga na 'pocetak' kao najskorije koriscen elem
+		adrOfExistingElem.Value.(*Elem).value = newValue //azuriraj vrednost posto je insert u pitanju
+	} else { //elemen nije u catchu
+		if cache.list.Len() == cache.n { //catch je pun u ovom trenutku
 			keyToRemove := cache.list.Back().Value.(*Elem).key
-			cache.list.Remove(cache.list.Back())
-			delete(cache.cache, keyToRemove)
+			cache.list.Remove(cache.list.Back()) //izbaci ga iz liste
+			delete(cache.cache, keyToRemove)     //izbaci ga iz mape
 		}
 		newElem := &Elem{key, newValue}
-		adrOfNewElem := cache.list.PushFront(newElem) //vratice adresu ovog elementa u listi
-		cache.cache[key] = adrOfNewElem
+		adrOfNewElem := cache.list.PushFront(newElem) //novokreirani element ubaci u listu na 'pocetak'
+		cache.cache[key] = adrOfNewElem               //ubaci ga u mapu
 	}
 }
 
 func (cache *LRUCache) Search(key string) []byte {
-	//proveri mapu, ako ima pomeri napred i vrati vrednost, ako nema vrati -1
+	//proveri mapu, ako ima pomeri elem na 'pocetak' liste i vrati vrednost elementa, ako nema vrati nil
 	adrOfExistingElem, ok := cache.cache[key]
 	if ok {
 		cache.list.MoveToFront(adrOfExistingElem)
