@@ -1,6 +1,7 @@
 package main
 
 import (
+	log "NAiSP/Log"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -11,34 +12,13 @@ import (
 	"time"
 )
 
-const (
-	CRC_SIZE        = 4
-	TIMESTAMP_SIZE  = 8
-	TOMBSTONE_SIZE  = 1
-	KEY_SIZE_SIZE   = 8
-	VALUE_SIZE_SIZE = 8
-
-	LOW_WATER_MARK = 5
-)
-
 func CRC32(data []byte) uint32 {
 	return crc32.ChecksumIEEE(data)
 }
 
-// Define the WAL record structure based on the format provided in the comments.
-type Wal struct {
-	CRC       uint32
-	Timestamp int64
-	Tombstone bool
-	KeySize   int64
-	ValueSize int64
-	Key       []byte
-	Value     []byte
-}
-
 var (
 	walFile           *os.File
-	bufferedRecords   []*Wal
+	bufferedRecords   []*log.Log
 	bufferSize        int
 	lowWaterMarkIndex int
 )
@@ -59,27 +39,27 @@ var (
 //////////////////////////////////////////////////////////////////////
 
 // Function to create a new WAL
-func CreateWALInstance(tombstone bool, key, value []byte) *Wal {
+func CreateWALInstance(tombstone bool, key, value []byte) *log.Log {
 	crc := crc32.NewIEEE()
 
 	timestamp := time.Now().UnixNano()
-	b := make([]byte, TIMESTAMP_SIZE)
+	b := make([]byte, log.TIMESTAMP_SIZE)
 	binary.BigEndian.PutUint64(b, uint64(timestamp))
 	crc.Write(b)
 
-	b = make([]byte, TOMBSTONE_SIZE)
+	b = make([]byte, log.TOMBSTONE_SIZE)
 	if tombstone {
 		b[0] = 1
 	}
 	crc.Write(b)
 
 	keySize := uint64(len(key))
-	b = make([]byte, KEY_SIZE_SIZE)
+	b = make([]byte, log.KEY_SIZE_SIZE)
 	binary.BigEndian.PutUint64(b, keySize)
 	crc.Write(b)
 
 	valueSize := uint64(len(value))
-	b = make([]byte, VALUE_SIZE_SIZE)
+	b = make([]byte, log.VALUE_SIZE_SIZE)
 	binary.BigEndian.PutUint64(b, valueSize)
 	crc.Write(b)
 
@@ -87,7 +67,7 @@ func CreateWALInstance(tombstone bool, key, value []byte) *Wal {
 
 	crc.Write(value)
 
-	return &Wal{
+	return &log.Log{
 		CRC:       crc.Sum32(),
 		Timestamp: timestamp,
 		Tombstone: tombstone,
@@ -195,7 +175,7 @@ func contains(slice []os.DirEntry, element os.DirEntry) (int, bool) {
 
 // AppendToWal appends the given WalRecord to the end of the WAL file.
 
-func AppendToWal(walFile *os.File, record *Wal) error {
+func AppendToWal(walFile *os.File, record *log.Log) error {
 	// Prepare the buffer to store the record data
 	buf := new(bytes.Buffer)
 
@@ -257,38 +237,38 @@ func AppendToWal(walFile *os.File, record *Wal) error {
 ReadNextRecordFromWal reads the next record from the WAL file and returns a *WalRecord.
 If there are no more records, it returns nil and io.EOF error.
 */
-func ReadNextRecordFromWal(walFile *os.File) (*Wal, error) {
+func ReadNextRecordFromWal(walFile *os.File) (*log.Log, error) {
 
 	// Read CRC field (4 bytes).
-	crcData := make([]byte, CRC_SIZE)
+	crcData := make([]byte, log.CRC_SIZE)
 	_, err := walFile.Read(crcData)
 	if err != nil {
 		return nil, err
 	}
 
 	// Read Timestamp field (8 bytes).
-	timestampData := make([]byte, TIMESTAMP_SIZE)
+	timestampData := make([]byte, log.TIMESTAMP_SIZE)
 	_, err = walFile.Read(timestampData)
 	if err != nil {
 		return nil, err
 	}
 
 	// Read Tombstone field (1 byte).
-	tombstoneData := make([]byte, TOMBSTONE_SIZE)
+	tombstoneData := make([]byte, log.TOMBSTONE_SIZE)
 	_, err = walFile.Read(tombstoneData)
 	if err != nil {
 		return nil, err
 	}
 
 	// Read Key Size field (8 bytes).
-	keySizeData := make([]byte, KEY_SIZE_SIZE)
+	keySizeData := make([]byte, log.KEY_SIZE_SIZE)
 	_, err = walFile.Read(keySizeData)
 	if err != nil {
 		return nil, err
 	}
 
 	// Read Value Size field (8 bytes).
-	valueSizeData := make([]byte, VALUE_SIZE_SIZE)
+	valueSizeData := make([]byte, log.VALUE_SIZE_SIZE)
 	_, err = walFile.Read(valueSizeData)
 	if err != nil {
 		return nil, err
@@ -316,7 +296,7 @@ func ReadNextRecordFromWal(walFile *os.File) (*Wal, error) {
 	}
 
 	// Create and return the WalRecord.
-	return &Wal{
+	return &log.Log{
 		CRC:       crc,
 		Timestamp: timestamp,
 		Tombstone: tombstone,
@@ -328,8 +308,8 @@ func ReadNextRecordFromWal(walFile *os.File) (*Wal, error) {
 }
 
 // ReadWal reads the whole WAL from the beginning to the end.
-func ReadWal(walFile *os.File) ([]*Wal, error) {
-	var records []*Wal
+func ReadWal(walFile *os.File) ([]*log.Log, error) {
+	var records []*log.Log
 
 	// Rewind the WAL file to the beginning.
 	_, err := walFile.Seek(0, 0)
