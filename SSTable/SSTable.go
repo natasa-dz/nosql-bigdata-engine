@@ -35,6 +35,8 @@ type Summary struct {
 	Entries []SummaryEntry
 }
 
+//IZMENI SUMMARY-dodaj da uzima 0 i n-ti element, ofset indexa i u summary ofset
+
 func BuildSummary(entries []Data, generation int) *Summary {
 	// Sort the entries by Key
 	sort.Slice(entries, func(i, j int) bool {
@@ -47,7 +49,9 @@ func BuildSummary(entries []Data, generation int) *Summary {
 	// Create the Summary entries
 	summaryEntries := make([]SummaryEntry, len(entries))
 	var offset int64
+
 	for i, entry := range entries {
+
 		encodedKey := hex.EncodeToString([]byte(entry.Key))
 		summaryEntries[i] = SummaryEntry{
 			Key:    encodedKey,
@@ -191,6 +195,7 @@ type Metadata struct {
 }
 
 func BuildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName string, generation int) (*Metadata, error) {
+
 	// Convert the map to a slice of Data for sorting and other operations
 	var dataSlice []Data
 	for _, data := range dataMap {
@@ -200,7 +205,7 @@ func BuildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName
 	// Sort the data
 	sortedData := SortData1(dataSlice)
 
-	// Build the Bloom Filter for the sorted data
+	// Build the Bloom Filter for the sorted data?
 	for _, data := range sortedData {
 		bloomFilter.Add([]byte(data.Key))
 	}
