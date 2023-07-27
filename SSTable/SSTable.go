@@ -20,53 +20,19 @@ type SSTable struct {
 	Metadata   MerkleRoot
 }
 
+///////////////////////// SUMMARY
+
 type SummaryEntry struct {
 	Key    string
 	Offset int64
 	Size   int64
 }
 
-type IndexEntry struct {
-	Key   string
-	Index int64
+type Summary struct {
+	Entries []SummaryEntry
 }
 
-func buildIndex(entries []Data, generation int) {
-	// Sort the entries by key
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].key < entries[j].key
-	})
-
-	// Create the filename for the Index file
-	filename := fmt.Sprintf("usertable-%d-Index.txt", generation)
-
-	// Create the Index entries
-	indexEntries := make([]IndexEntry, len(entries))
-	for i, entry := range entries {
-		encodedKey := hex.EncodeToString([]byte(entry.key))
-		indexEntries[i] = IndexEntry{
-			Key:   encodedKey,
-			Index: entry.index,
-		}
-	}
-
-	// Create the contents of the Index file
-	indexContents := "Key\tIndex\n"
-	for _, entry := range indexEntries {
-		indexContents += fmt.Sprintf("%s\t%d\n", entry.Key, entry.Index)
-	}
-
-	// Write the contents to the Index file
-	err := ioutil.WriteFile(filename, []byte(indexContents), 0644)
-	if err != nil {
-		fmt.Println("Error writing Index file:", err)
-		return
-	}
-
-	fmt.Println("Index file created:", filename)
-}
-
-func buildSummary(entries []Data, generation int) {
+func buildSummary(entries []Data, generation int) *Summary {
 	// Sort the entries by key
 	sort.Slice(entries, func(i, j int) bool {
 		return entries[i].key < entries[j].key
@@ -98,10 +64,50 @@ func buildSummary(entries []Data, generation int) {
 	err := ioutil.WriteFile(filename, []byte(summaryContents), 0644)
 	if err != nil {
 		fmt.Println("Error writing Summary file:", err)
-		return
+		return nil // Return nil in case of an error
 	}
 
 	fmt.Println("Summary file created:", filename)
+
+	// Create and return the Summary object
+	return &Summary{
+		Entries: summaryEntries,
+	}
+}
+
+///////////////////////// INDEX
+
+type IndexEntry struct {
+	Key   string
+	Index int64
+}
+
+type Index struct {
+	Entries []IndexEntry
+}
+
+func buildIndex(entries []Data) *Index {
+	// Sort the entries by key
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].key < entries[j].key
+	})
+
+	// Create the Index entries
+	indexEntries := make([]IndexEntry, len(entries))
+	for i, entry := range entries {
+		encodedKey := hex.EncodeToString([]byte(entry.key))
+		indexEntries[i] = IndexEntry{
+			Key:   encodedKey,
+			Index: entry.index,
+		}
+	}
+
+	// Create the Index object
+	index := &Index{
+		Entries: indexEntries,
+	}
+
+	return index
 }
 
 /* func buildFilter():
@@ -170,14 +176,28 @@ type TOCEntry struct {
 
 type TOC []TOCEntry
 
-func buildMetaData(dataSlice []Data, bloomFilter *Bloom2, indexInfo *Index, sstableFileName string) *Metadata {
+type Metadata struct {
+	Version      string
+	DataSummary  *Summary
+	BloomFilter  *Bloom2
+	SSTableIndex *Index
+	TOC          TOC
+	MerkleRoot   *Node
+}
+
+func buildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName string, generation int) *Metadata {
+	// Convert the map to a slice of Data for sorting and other operations
+	var dataSlice []Data
+	for _, data := range dataMap {
+		dataSlice = append(dataSlice, data)
+	}
 
 	// Sort the data
-	sortedData := sortData(dataSlice)
+	sortedData := sortData1(dataSlice)
 
 	// Build the Bloom Filter for the sorted data
 	for _, data := range sortedData {
-		bloomFilter.add(data.key)
+		bloomFilter.add([]byte(data.key))
 	}
 
 	// Build the SSTable Index
@@ -186,10 +206,10 @@ func buildMetaData(dataSlice []Data, bloomFilter *Bloom2, indexInfo *Index, ssta
 	// Create a Table of Contents entry for this SSTable
 	tocEntry := TOCEntry{
 		FileName:    sstableFileName,
-		StartOffset: 0, // calculate this based on the file size once you write the SSTable to disk.
-		EndOffset:   0, // same, nakon upisa racunas based on the file size
-		MinKey:      sortedData[0].key,
-		MaxKey:      sortedData[len(sortedData)-1].key,
+		StartOffset: 0,                                         // calculate this based on the file size once you write the SSTable to disk.
+		EndOffset:   0,                                         // same, nakon upisa racunas based on the file size
+		MinKey:      []byte(sortedData[0].key),                 // Convert string to []byte
+		MaxKey:      []byte(sortedData[len(sortedData)-1].key), // Convert string to []byte
 	}
 
 	// Create the Table of Contents
@@ -197,13 +217,14 @@ func buildMetaData(dataSlice []Data, bloomFilter *Bloom2, indexInfo *Index, ssta
 
 	// Build the Merkle Tree from the sorted data
 	merkleRoot := buildMerkleTreeRoot(sortedData)
+	const SSTableVersion = "1.0"
 
 	// Create the Metadata object
 	metadata := &Metadata{
 		Version:      SSTableVersion,
-		DataSummary:  buildSummary(sortedData),
-		BloomFilter:  bloomFilter.GetInfo(),
-		SSTableIndex: indexInfo.GetInfo(),
+		DataSummary:  buildSummary(sortedData, generation), // Pass the generation here
+		BloomFilter:  bloomFilter,
+		SSTableIndex: sstableIndex,
 		TOC:          toc,
 		MerkleRoot:   merkleRoot,
 	}
@@ -263,6 +284,15 @@ type Data struct {
 	key   string
 	value string
 	index int64
+}
+
+func sortData1(entries []Data) []Data {
+	// Sort the entries by key
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].key < entries[j].key
+	})
+
+	return entries
 }
 
 func sortData(memtable map[string]Data) []Data {
