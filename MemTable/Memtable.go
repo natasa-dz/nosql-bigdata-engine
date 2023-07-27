@@ -1,5 +1,7 @@
 package MemTable
 
+import "NAiSP/Log"
+
 //trashold - granica/prag zapisa (< 100%)
 //kapacitet strukture memtabla nije isto sto i ovaj trashold!!!
 //poenta: trashold je procenat recimo da kazemo da je kapacitet b stabla 10elem i onda kazemo kad se popuni vise od 75% stabla ti flushuj na disk
@@ -29,14 +31,14 @@ func (table *Memtable) Flush() {
 	//mozda nije lose imati neku strukturu koja ce biti prelazna izmedju svih memtablestruktura (btree i skiplist) i SSTable struktova
 }
 
-func (table *Memtable) Insert(data Data) {
+func (table *Memtable) Insert(data Log.Log) {
 	//if:
 	//proveri da li postoji, ako postoji samo updatuj podatak i returnuj
 	//else:
 	//insertuj
 	//proveri da li je popunjenost > trashold
 	//jeste onda flushuj
-	indexInNode, AddressOfNode := table.tableStruct.Search(data.key)
+	indexInNode, AddressOfNode := table.tableStruct.Search(string(data.Key))
 	if AddressOfNode != nil {
 		AddressOfNode.keys[indexInNode] = data
 		return
