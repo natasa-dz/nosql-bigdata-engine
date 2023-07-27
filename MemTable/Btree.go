@@ -1,5 +1,7 @@
 package MemTable
 
+import Log "NAiSP/Log"
+
 const q int = 2
 
 // konstanta t je neki stepen ovog drveta koji se odredjuje iz konfiguracionog fajla
@@ -7,14 +9,8 @@ const q int = 2
 
 type Node struct {
 	leaf     bool
-	keys     []Data
+	keys     []Log.Log
 	children []*Node //lista pokazivaca na Nodeove koji su children
-}
-
-type Data struct {
-	key       string
-	value     []byte
-	tombstone bool //active-inactive
 }
 
 type Tree struct {
@@ -32,22 +28,18 @@ func (t *Tree) GetNumOfElements() uint {
 }
 
 // Insertuje na odredjeni index u arrayu, a ove ostale pomeri za jedno mesto desno
-func (node *Node) InsertDataIntoArray(index int, data Data) {
-
+func (node *Node) InsertDataIntoArray(index int, data Log.Log) {
 	if len(node.keys) == index { //stavljamo ga na kraj
-
 		// MOJ WORKAROUND BUGA KOJI NEMAM BLAGE ZASTO SE DESAVA??
-
 		//TODO: videti sa nekim, nez dal ce ovo praviti problem na nekim drugim mestima gde koristim append koji mi je pravio problem
 		//		i da li je ovo resilo ceo problem ili radi samo za ovaj case iz nekog nepoznatog razloga, takodje sta raditi sa istom ovom
 		//		fjom ali za Node-ove
-		list := make([]Data, len(node.keys)+1)
+		list := make([]Log.Log, len(node.keys)+1)
 		copy(list, node.keys)
 		list[len(node.keys)] = data
 		node.keys = list
 		//******************KOD KOJI JE BIO RANIJE I PRAVIO ERROR NA InsertOVANJU 7 PRI REDOSLEDU(10,20,5,6,7)
 		//node.keys = append(node.keys, value)
-
 	} else { //ako ide negde pre kraja odredjeni se pomeraju udesno da bi napravili mesto
 		node.keys = append(node.keys[:index+1], node.keys[index:]...)
 		node.keys[index] = data
@@ -55,7 +47,6 @@ func (node *Node) InsertDataIntoArray(index int, data Data) {
 }
 
 func (node *Node) InsertNodeIntoArray(index int, value *Node) { //Ista fja ko gore samo za Node-ove
-
 	if len(node.children) == index {
 		node.children = append(node.children, value)
 		return
@@ -66,7 +57,7 @@ func (node *Node) InsertNodeIntoArray(index int, value *Node) { //Ista fja ko go
 
 func (node *Node) getAppropriateChildIndex(key string) int { //vratice index deteta koje treba da proveravamo dalje
 	for i, num := range node.keys {
-		if num.key > key {
+		if string(num.Key) > key {
 			return i
 		}
 		if i+1 == len(node.keys) {
@@ -77,7 +68,7 @@ func (node *Node) getAppropriateChildIndex(key string) int { //vratice index det
 }
 func (node *Node) Contains(key string) int { //ako cvor sadrzi kljuc vratice index gde se kljuc nalazi u Nodu
 	for ind, item := range node.keys {
-		if item.key == key {
+		if string(item.Key) == key {
 			return ind
 		}
 	}
@@ -85,10 +76,9 @@ func (node *Node) Contains(key string) int { //ako cvor sadrzi kljuc vratice ind
 }
 
 // Insertion functions
-func (node *Node) InsertNonFull(data Data) int {
-
+func (node *Node) InsertNonFull(data Log.Log) int {
 	i := len(node.keys)
-	for i > 0 && node.keys[i-1].key > data.key { //proveravaj od poslednjeg i smanjuj dok ne dodjes do indexa na koji ces da insertujes Data
+	for i > 0 && string(node.keys[i-1].Key) > string(data.Key) { //proveravaj od poslednjeg i smanjuj dok ne dodjes do indexa na koji ces da insertujes Data
 		i--
 	}
 	node.InsertDataIntoArray(i, data) //Insertuj na taj index koji si odredio
@@ -97,35 +87,27 @@ func (node *Node) InsertNonFull(data Data) int {
 
 // TODO moglo bi se refaktorisati...
 func (node *Node) splitCurrent(root bool, parent *Node) *Node {
-
 	if root == true { //ako je u pitanju root malo je drugacije jer stvaramo potpuno novog parenta dok ako nije root samo dajemo cvoru iznad
-
-		parent = &Node{leaf: false, keys: []Data{node.keys[len(node.keys)/2]}}
+		parent = &Node{leaf: false, keys: []Log.Log{node.keys[len(node.keys)/2]}}
 		childLeft := &Node{leaf: node.children == nil}     //trenutni cvor, posto je pun se deli. Srednji elem u njemu ce ici 'gore'
 		childLeft.keys = node.keys[:(len(node.keys) / 2)]  //u novi parent Node, a ostatak tako podeljen ce biti levo i desno dete.
 		childRight := &Node{leaf: node.children == nil}    //deca ce se takodje rasporediti po toj podeli gde ce levo dete kljuca
 		childRight.keys = node.keys[(len(node.keys)/2)+1:] //koji je otisao gore(3. nivo, ovo ce mu posle operacije biti unuk tehnicki)
-
-		if node.children != nil { //postati dete levog, a desno desnog.
+		if node.children != nil {                          //postati dete levog, a desno desnog.
 			childLeft.children = node.children[:len(node.keys)/2+1]
 			childRight.children = node.children[len(node.keys)/2+1:]
 		}
-
 		parent.children = []*Node{childLeft, childRight}
 		return parent
 	} else {
-
-		keyForParent := node.keys[len(node.keys)/2]       //uzmemo srednji element koji ce da ide u cvor gore(koji sigurno nije pun jer
-		childLeft := &Node{leaf: node.leaf}               //da je bio pun bio bi podeljen prilikom silaska na dole po ovom algoritmu
-		childLeft.keys = node.keys[:(len(node.keys) / 2)] //kljucevi se podele na levi i na desni cvor nakon odlaska srednjeg gore
-
+		keyForParent := node.keys[len(node.keys)/2]        //uzmemo srednji element koji ce da ide u cvor gore(koji sigurno nije pun jer
+		childLeft := &Node{leaf: node.leaf}                //da je bio pun bio bi podeljen prilikom silaska na dole po ovom algoritmu
+		childLeft.keys = node.keys[:(len(node.keys) / 2)]  //kljucevi se podele na levi i na desni cvor nakon odlaska srednjeg gore
 		childRight := &Node{leaf: node.leaf}               //ova dva novonastala cvora odlaskom gore se dodaju u decu parenta na
 		childRight.keys = node.keys[(len(node.keys)/2)+1:] //potrebno mesto, a njihova deca (3. nivo) se rasporedjuje kako treba)
-
 		indexForChildren := parent.InsertNonFull(keyForParent)
 		parent.children[indexForChildren] = childLeft
 		parent.InsertNodeIntoArray(indexForChildren+1, childRight)
-
 		if node.children != nil {
 			childLeft.children = node.children[:len(node.keys)/2+1]
 			childRight.children = node.children[len(node.keys)/2+1:]
@@ -134,18 +116,15 @@ func (node *Node) splitCurrent(root bool, parent *Node) *Node {
 	}
 }
 
-func (t *Tree) Insert(data Data) {
-
-	indexInNode, nodePointer := t.Search(data.key) //pretrazi stablo da vidis da li ga sadrzi, ako sadrzi == samo update
-
+func (t *Tree) Insert(data Log.Log) {
+	indexInNode, nodePointer := t.Search(string(data.Key)) //pretrazi stablo da vidis da li ga sadrzi, ako sadrzi == samo update
 	if indexInNode != -1 {
-		nodePointer.keys[indexInNode].value = data.value
+		nodePointer.keys[indexInNode].Value = data.Value
 		return
 	}
 
 	if t.root == nil { //postavljas koren == bice u prvoj iteraciji
-
-		t.root = &Node{leaf: true, keys: []Data{data}}
+		t.root = &Node{leaf: true, keys: []Log.Log{data}}
 		t.numOfData = 1
 		return
 	}
@@ -156,12 +135,11 @@ func (t *Tree) Insert(data Data) {
 	x := t.root //privremeni node da ne bih pomerao koren
 
 	for x.leaf == false { //isto sto i while hahahah
-
-		index := x.getAppropriateChildIndex(data.key)
+		index := x.getAppropriateChildIndex(string(data.Key))
 		y := x.children[index] //dete na kojem bi trebalo dalje dole da idemo prema listovima
 		if (len(y.keys)) == 2*q-1 {
 			x = y.splitCurrent(false, x) //ako je to dete puno mora prvo da se splituje pre nastavka spustanja
-			indexOfNextChild := x.getAppropriateChildIndex(data.key)
+			indexOfNextChild := x.getAppropriateChildIndex(string(data.Key))
 			x = x.children[indexOfNextChild] //onda biramo jedno od dva novonastala deteta (podelom y)
 		} else {
 			x = y //samo idemo dole jer y nije pun
@@ -197,7 +175,7 @@ func (t *Tree) Search(key string) (int, *Node) { //retVal je index u Node(keys) 
 func (t *Tree) Delete(key string) { //samo logicko brisanje izmenice tombstone, nece zapravo obrisati iz stabla
 	indexInNode, node := t.Search(key)
 	if node != nil {
-		node.keys[indexInNode].tombstone = false
+		node.keys[indexInNode].Tombstone = false
 	}
 }
 
