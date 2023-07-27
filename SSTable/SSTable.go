@@ -34,10 +34,10 @@ type Summary struct {
 	Entries []SummaryEntry
 }
 
-func buildSummary(entries []Data, generation int) *Summary {
-	// Sort the entries by key
+func BuildSummary(entries []Data, generation int) *Summary {
+	// Sort the entries by Key
 	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].key < entries[j].key
+		return entries[i].Key < entries[j].Key
 	})
 
 	// Create the filename for the Summary file
@@ -47,13 +47,13 @@ func buildSummary(entries []Data, generation int) *Summary {
 	summaryEntries := make([]SummaryEntry, len(entries))
 	var offset int64
 	for i, entry := range entries {
-		encodedKey := hex.EncodeToString([]byte(entry.key))
+		encodedKey := hex.EncodeToString([]byte(entry.Key))
 		summaryEntries[i] = SummaryEntry{
 			Key:    encodedKey,
 			Offset: offset,
-			Size:   int64(len(entry.value)),
+			Size:   int64(len(entry.Value)),
 		}
-		offset += int64(len(entry.value))
+		offset += int64(len(entry.Value))
 	}
 
 	// Create the contents of the Summary file
@@ -88,19 +88,19 @@ type Index struct {
 	Entries []IndexEntry
 }
 
-func buildIndex(entries []Data) *Index {
-	// Sort the entries by key
+func BuildIndex(entries []Data) *Index {
+	// Sort the entries by Key
 	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].key < entries[j].key
+		return entries[i].Key < entries[j].Key
 	})
 
 	// Create the Index entries
 	indexEntries := make([]IndexEntry, len(entries))
 	for i, entry := range entries {
-		encodedKey := hex.EncodeToString([]byte(entry.key))
+		encodedKey := hex.EncodeToString([]byte(entry.Key))
 		indexEntries[i] = IndexEntry{
 			Key:   encodedKey,
-			Index: entry.index,
+			Index: entry.Index,
 		}
 	}
 
@@ -115,24 +115,26 @@ func buildIndex(entries []Data) *Index {
 /* func buildFilter():
 funkcija uzima ocekivane elemente, br. ocek. el. i rate, dodaje el. u bloom i kreira bloom filter*/
 
-func buildFilter(sortedData []Data, expectedElements int, falsePositiveRate float64) *Bloom2 {
+func BuildFilter(sortedData []Data, expectedElements int, falsePositiveRate float64) *Bloom2 {
 	bloom := &Bloom2{}
 	bloom.InitializeBloom2(expectedElements, falsePositiveRate)
 
-	// Add each key to the Bloom Filter
+	// Add each Key to the Bloom Filter
 	for _, data := range sortedData {
-		bloom.Add([]byte(data.key))
+		bloom.Add([]byte(data.Key))
 	}
 
 	return bloom
 }
 
-func buildMerkleTreeRoot(sortedData []Data) *Node {
+// bottom-up izgradnja, pretpostavka da imamo key:value parove!!!!!!!!
+
+func BuildMerkleTreeRoot(sortedData []Data) *Node {
 	// Create leaf nodes for each data entry and hash them individually.
 	var leafNodes []*Node
 	for _, data := range sortedData {
 		node := &Node{
-			Data: []byte(data.key + data.value), // Concatenate key and value for simplicity
+			Data: []byte(data.Key + data.Value), // Concatenate Key and Value for simplicity
 		}
 		leafNodes = append(leafNodes, node)
 	}
@@ -187,7 +189,7 @@ type Metadata struct {
 	MerkleRoot   *Node
 }
 
-func buildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName string, generation int) *Metadata {
+func BuildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName string, generation int) (*Metadata, error) {
 	// Convert the map to a slice of Data for sorting and other operations
 	var dataSlice []Data
 	for _, data := range dataMap {
@@ -195,82 +197,81 @@ func buildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName
 	}
 
 	// Sort the data
-	sortedData := sortData1(dataSlice)
+	sortedData := SortData1(dataSlice)
 
 	// Build the Bloom Filter for the sorted data
 	for _, data := range sortedData {
-		bloomFilter.Add([]byte(data.key))
+		bloomFilter.Add([]byte(data.Key))
 	}
 
 	// Build the SSTable Index
-	sstableIndex := buildIndex(sortedData)
+	sstableIndex := BuildIndex(sortedData)
+
+	// Build the Merkle Tree from the sorted data
+	merkleRoot := BuildMerkleTreeRoot(sortedData)
+
+	const SSTableVersion = "1.0"
+
+	// Write the SSTable to disk and get the actual file size
+	fileSize, err := WriteSSTableToDisk(sstableFileName, sortedData)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create a Table of Contents entry for this SSTable
 	tocEntry := TOCEntry{
 		FileName:    sstableFileName,
-		StartOffset: 0,                                         // calculate this based on the file size once you write the SSTable to disk.
-		EndOffset:   0,                                         // same, nakon upisa racunas based on the file size
-		MinKey:      []byte(sortedData[0].key),                 // Convert string to []byte
-		MaxKey:      []byte(sortedData[len(sortedData)-1].key), // Convert string to []byte
+		StartOffset: 0, // In this example, we assume that the SSTable starts at offset 0.
+		EndOffset:   fileSize,
+		MinKey:      []byte(sortedData[0].Key),
+		MaxKey:      []byte(sortedData[len(sortedData)-1].Key),
 	}
 
 	// Create the Table of Contents
 	toc := TOC{tocEntry}
 
-	// Build the Merkle Tree from the sorted data
-	merkleRoot := buildMerkleTreeRoot(sortedData)
-	const SSTableVersion = "1.0"
+	// Update the TOCEntry with the actual file size
+	tocEntry.StartOffset = 0 // In this example, we assume that the SSTable starts at offset 0.
+	tocEntry.EndOffset = fileSize
 
 	// Create the Metadata object
 	metadata := &Metadata{
 		Version:      SSTableVersion,
-		DataSummary:  buildSummary(sortedData, generation), // Pass the generation here
+		DataSummary:  BuildSummary(sortedData, generation), // Pass the generation here
 		BloomFilter:  bloomFilter,
 		SSTableIndex: sstableIndex,
 		TOC:          toc,
 		MerkleRoot:   merkleRoot,
 	}
 
-	// Write the SSTable to disk and get the actual file size
-	// This function should write the SSTable data to disk and return the file size
-	fileSize := writeSSTableToDisk(sstableFileName, sortedData)
-
-	// Update the TOCEntry with the actual file size
-	tocEntry.StartOffset = 0 // Set the correct start offset based on the SSTable file's position.
-	tocEntry.EndOffset = fileSize
-
-	return metadata
+	return metadata, nil
 }
 
-func writeSSTableToDisk(fileName string, sortedData []Data) int64 {
+func WriteSSTableToDisk(fileName string, sortedData []Data) (int64, error) {
 	// Open the file for writing
 	file, err := os.Create(fileName)
 	if err != nil {
-		fmt.Println("Error creating file:", err)
-		return 0
+		return 0, err
 	}
 	defer file.Close()
 
-	// Write the sorted data to the file
+	// Write the sorted data to the file in CSV format
 	for _, data := range sortedData {
-		// Assuming each data entry is a simple key-value pair
-		// You may need to adjust this based on your actual data structure
-		line := fmt.Sprintf("%s,%s\n", data.key, data.value)
+		// Use CSV format: "key,value\n"
+		line := fmt.Sprintf("%s,%s\n", data.Key, data.Value)
 		_, err := file.WriteString(line)
 		if err != nil {
-			fmt.Println("Error writing to file:", err)
-			return 0
+			return 0, err
 		}
 	}
 
 	// Get the file size after writing the data
 	fileInfo, err := file.Stat()
 	if err != nil {
-		fmt.Println("Error getting file info:", err)
-		return 0
+		return 0, err
 	}
 
-	return fileInfo.Size()
+	return fileInfo.Size(), nil
 }
 
 /////////////////// SORT DATA
@@ -280,24 +281,24 @@ func writeSSTableToDisk(fileName string, sortedData []Data) int64 {
 
 otprilike ideja-memtable ti je input,
 Data struct sadrzi podatke memTable-a,
-vraca key-value vrednosti sortirane po kljucu spremne za upis
+vraca Key-Value vrednosti sortirane po kljucu spremne za upis
 */
 type Data struct {
-	key   string
-	value string
-	index int64
+	Key   string
+	Value string
+	Index int64
 }
 
-func sortData1(entries []Data) []Data {
-	// Sort the entries by key
+func SortData1(entries []Data) []Data {
+	// Sort the entries by Key
 	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].key < entries[j].key
+		return entries[i].Key < entries[j].Key
 	})
 
 	return entries
 }
 
-func sortData(memtable map[string]Data) []Data {
+func SortData(memtable map[string]Data) []Data {
 	// Create a slice to hold the data from the memtable
 	dataSlice := make([]Data, 0, len(memtable))
 
@@ -306,14 +307,14 @@ func sortData(memtable map[string]Data) []Data {
 		dataSlice = append(dataSlice, data)
 	}
 
-	// Sort the Data slice by key in ascending order
+	// Sort the Data slice by Key in ascending order
 	sort.Slice(dataSlice, func(i, j int) bool {
-		return dataSlice[i].key < dataSlice[j].key
+		return dataSlice[i].Key < dataSlice[j].Key
 	})
 
-	// Assign incremental index values to the sorted entries
+	// Assign incremental Index values to the sorted entries
 	for i, entry := range dataSlice {
-		entry.index = int64(i)
+		entry.Index = int64(i)
 		dataSlice[i] = entry
 	}
 
