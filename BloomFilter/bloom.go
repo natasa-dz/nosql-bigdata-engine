@@ -1,4 +1,4 @@
-package main
+package BloomFilter
 
 type Bloom2 struct {
 	m, k          int
@@ -42,7 +42,7 @@ func (bloom *Bloom2) BloomSearch2(data []byte) bool {
 	}
 }
 
-func (bloom *Bloom2) add(data []byte) {
+func (bloom *Bloom2) Add(data []byte) {
 
 	for _, hf := range bloom.hashFunctions {
 		hash := hf.Hash(data)

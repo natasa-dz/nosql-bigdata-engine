@@ -1,4 +1,6 @@
-package main
+package BloomFilter
+
+/*package main
 
 import (
 	"bufio"
@@ -44,3 +46,4 @@ func main() {
 	fmt.Println(bloom.BloomSearch2(data3))
 
 }
+*/

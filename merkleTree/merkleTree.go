@@ -1,4 +1,4 @@
-package main
+package merkleTree
 
 import (
 	"crypto/sha256"
@@ -16,13 +16,13 @@ func (mr *MerkleRoot) String() string {
 }
 
 type Node struct {
-	data  []byte
-	left  *Node
-	right *Node
+	Data  []byte
+	Left  *Node
+	Right *Node
 }
 
 func (n *Node) String() string {
-	return hex.EncodeToString(n.data[:])
+	return hex.EncodeToString(n.Data[:])
 }
 
 func Hash(data []byte) []byte {
@@ -37,10 +37,10 @@ func buildMerkleTree(data [][]byte) *Node {
 
 	var nodes []*Node
 
-	// Create leaf nodes for each data element and hash them individually.
+	// Create leaf nodes for each Data element and hash them individually.
 	for _, datum := range data {
 		node := &Node{
-			data: Hash(datum),
+			Data: Hash(datum),
 		}
 		nodes = append(nodes, node)
 	}
@@ -56,9 +56,9 @@ func buildMerkleTree(data [][]byte) *Node {
 			if i+1 < len(nodes) {
 
 				newNode := &Node{
-					data:  Hash(append(nodes[i].data, nodes[i+1].data...)),
-					left:  nodes[i],
-					right: nodes[i+1],
+					Data:  Hash(append(nodes[i].Data, nodes[i+1].Data...)),
+					Left:  nodes[i],
+					Right: nodes[i+1],
 				}
 
 				newLevel = append(newLevel, newNode)
@@ -80,18 +80,18 @@ func serializeMerkleTree(root *Node) []byte {
 		return nil
 	}
 
-	if root.left == nil && root.right == nil {
-		return root.data
+	if root.Left == nil && root.Right == nil {
+		return root.Data
 	}
 
-	leftBytes := serializeMerkleTree(root.left)
-	rightBytes := serializeMerkleTree(root.right)
+	leftBytes := serializeMerkleTree(root.Left)
+	rightBytes := serializeMerkleTree(root.Right)
 
-	return append(root.data, append(leftBytes, rightBytes...)...)
+	return append(root.Data, append(leftBytes, rightBytes...)...)
 }
 
 func main() {
-	// Example data elements (in real-world applications, these would be the actual data or transactions).
+	// Example Data elements (in real-world applications, these would be the actual Data or transactions).
 	data := [][]byte{
 		[]byte("Data1"),
 		[]byte("Data2"),
@@ -99,11 +99,11 @@ func main() {
 		[]byte("Data4"),
 	}
 
-	// Create the Merkle tree from the data.
+	// Create the Merkle tree from the Data.
 	root := buildMerkleTree(data)
 
 	// Print the Merkle root.
-	fmt.Printf("Merkle Root: %x\n", root.data)
+	fmt.Printf("Merkle Root: %x\n", root.Data)
 
 	// Serialize the Merkle tree.
 	serializedTree := serializeMerkleTree(root)

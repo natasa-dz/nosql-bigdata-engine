@@ -46,4 +46,34 @@ func (table *Memtable) Insert(data Data) {
 			//table.Flush() TODO Flushuj i zameni tabele ili isprazni kako god ti volja
 		}
 	}
+
 }
+
+// ///////////////////////////////////// PRIMER KAKO BI MOGAO OTRPILIKE IZGLEDATI FLUSH
+
+/*func (table *Memtable) FlushTry() {
+	elements := table.GetElements()
+	generation := 0 // You might need a way to manage generation numbers
+
+	// Create an SSTable and serialize it (for demonstration purposes, adjust as needed)
+	sstable := &SSTable{
+		Generation: generation,
+		Elements:   elements,
+	}
+	sstable.Serialize("usertable", generation, "db")
+
+	// Clear the Memtable
+	table.tableStruct = CreateTree()
+}
+
+func (table *Memtable) GetElements() []Data {
+	elements := make([]Data, 0)
+	iterator := table.tableStruct.GetIterator()
+	for iterator.Next() {
+		record := iterator.Value().(Data)
+		if !record.Tombstone {
+			elements = append(elements, record)
+		}
+	}
+	return elements
+}*/

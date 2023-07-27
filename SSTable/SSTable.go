@@ -3,6 +3,8 @@ package SSTable
 /////////////////////////// OKVIRNA IMPLEMENTACIJA SSTABLE-A
 
 import (
+	. "NAiSP/BloomFilter"
+	. "NAiSP/merkleTree"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -119,7 +121,7 @@ func buildFilter(sortedData []Data, expectedElements int, falsePositiveRate floa
 
 	// Add each key to the Bloom Filter
 	for _, data := range sortedData {
-		bloom.add([]byte(data.key))
+		bloom.Add([]byte(data.key))
 	}
 
 	return bloom
@@ -130,7 +132,7 @@ func buildMerkleTreeRoot(sortedData []Data) *Node {
 	var leafNodes []*Node
 	for _, data := range sortedData {
 		node := &Node{
-			data: []byte(data.key + data.value), // Concatenate key and value for simplicity
+			Data: []byte(data.key + data.value), // Concatenate key and value for simplicity
 		}
 		leafNodes = append(leafNodes, node)
 	}
@@ -142,9 +144,9 @@ func buildMerkleTreeRoot(sortedData []Data) *Node {
 		for i := 0; i < len(leafNodes); i += 2 {
 			if i+1 < len(leafNodes) {
 				newNode := &Node{
-					data:  Hash(append(leafNodes[i].data, leafNodes[i+1].data...)),
-					left:  leafNodes[i],
-					right: leafNodes[i+1],
+					Data:  Hash(append(leafNodes[i].Data, leafNodes[i+1].Data...)),
+					Left:  leafNodes[i],
+					Right: leafNodes[i+1],
 				}
 				newLevel = append(newLevel, newNode)
 			} else {
@@ -197,7 +199,7 @@ func buildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName
 
 	// Build the Bloom Filter for the sorted data
 	for _, data := range sortedData {
-		bloomFilter.add([]byte(data.key))
+		bloomFilter.Add([]byte(data.key))
 	}
 
 	// Build the SSTable Index
@@ -317,3 +319,5 @@ func sortData(memtable map[string]Data) []Data {
 
 	return dataSlice
 }
+
+///////////////////////////////// DEBUG
