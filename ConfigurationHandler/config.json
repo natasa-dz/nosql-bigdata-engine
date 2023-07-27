@@ -1,0 +1,6 @@
+{
+  "MemtableStruct" : "btree",
+  "SizeOfTable" : 15,
+  "Trashold" : 0.8,
+  "BTreeDegree" : 2
+}
