@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
+	"strings"
 )
 
 type SSTable struct {
@@ -321,4 +322,233 @@ func SortData(memtable map[string]Data) []Data {
 	return dataSlice
 }
 
-///////////////////////////////// DEBUG
+///////////////////////////////// 3. stavka vezbi
+
+// Function to save Data to disk with the specified naming format
+func SaveDataToDisk(sortedData []Data, generation int) error {
+	// Create the filename for the Data file
+	filename := fmt.Sprintf("usertable-%d-Data.db", generation)
+
+	// Open the file for writing
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Write the sorted data to the file in CSV format
+	for _, data := range sortedData {
+		// Use CSV format: "key,value\n"
+		line := fmt.Sprintf("%s,%s\n", data.Key, data.Value)
+		_, err := file.WriteString(line)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Function to save Index to disk with the specified naming format
+func SaveIndexToDisk(index *Index, generation int) error {
+	// Create the filename for the Index file
+	filename := fmt.Sprintf("usertable-%d-Index.db", generation)
+
+	// Open the file for writing
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Write the Index entries to the file
+	for _, entry := range index.Entries {
+		line := fmt.Sprintf("%s,%d\n", entry.Key, entry.Index)
+		_, err := file.WriteString(line)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Function to save Summary to disk with the specified naming format
+func SaveSummaryToDisk(summary *Summary, generation int) error {
+	// Create the filename for the Summary file
+	filename := fmt.Sprintf("usertable-%d-Summary.txt", generation)
+
+	// Open the file for writing
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Write the Summary entries to the file
+	file.WriteString("Key\tOffset\tSize\n")
+	for _, entry := range summary.Entries {
+		line := fmt.Sprintf("%s\t%d\t%d\n", entry.Key, entry.Offset, entry.Size)
+		_, err := file.WriteString(line)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Function to save BloomFilter to disk with the specified naming format
+func SaveBloomFilterToDisk(bloomFilter *Bloom2, generation int) error {
+	// Create the filename for the BloomFilter file
+	filename := fmt.Sprintf("usertable-%d-Filter.txt", generation)
+
+	// Open the file for writing
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Serialize the BloomFilter contents to a string
+	serializedBloom := serializeBloomFilter(bloomFilter)
+
+	// Write the BloomFilter contents to the file
+	_, err = file.WriteString(serializedBloom)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Helper function to serialize the BloomFilter contents to a string
+func serializeBloomFilter(bloomFilter *Bloom2) string {
+	var serializedStrings []string
+
+	// Get the bit slices from the BloomFilter
+	bitSlices := bloomFilter.BitSlices
+
+	// Convert each byte of the bit slices to a hexadecimal string
+	for _, bitSlice := range bitSlices {
+		hexString := hex.EncodeToString([]byte{bitSlice})
+		serializedStrings = append(serializedStrings, hexString)
+	}
+
+	// Join the hexadecimal strings with commas
+	serializedBloom := strings.Join(serializedStrings, ",")
+
+	return serializedBloom
+}
+
+// Function to save TOC to disk with the specified naming format
+func SaveTOCToDisk(toc TOC, generation int) error {
+	// Create the filename for the TOC file
+	filename := fmt.Sprintf("usertable-%d-TOC.txt", generation)
+
+	// Open the file for writing
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Write the TOC entries to the file
+	for _, entry := range toc {
+		line := fmt.Sprintf("%s %d %d %s %s\n", entry.FileName, entry.StartOffset, entry.EndOffset,
+			hex.EncodeToString(entry.MinKey), hex.EncodeToString(entry.MaxKey))
+		_, err := file.WriteString(line)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Function to save Metadata to disk with the specified naming format
+func SaveMetadataToDisk(metadata *Metadata, generation int) error {
+	// Create the filename for the Metadata file
+	filename := fmt.Sprintf("usertable-%d-Metadata.txt", generation)
+
+	// Open the file for writing
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Write the Version to the file
+	_, err = file.WriteString(metadata.Version + "\n")
+	if err != nil {
+		return err
+	}
+
+	// Write the DataSummary entries to the file
+	for _, entry := range metadata.DataSummary.Entries {
+		line := fmt.Sprintf("%s %d %d\n", entry.Key, entry.Offset, entry.Size)
+		_, err := file.WriteString(line)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Write the BloomFilter contents to the file
+	for _, bit := range metadata.BloomFilter.BitSlices {
+		_, err := file.WriteString(fmt.Sprintf("%d ", bit))
+		if err != nil {
+			return err
+		}
+	}
+	_, err = file.WriteString("\n")
+	if err != nil {
+		return err
+	}
+
+	// Write the SSTableIndex entries to the file
+	for _, entry := range metadata.SSTableIndex.Entries {
+		line := fmt.Sprintf("%s %d\n", entry.Key, entry.Index)
+		_, err := file.WriteString(line)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Write the TOC entries to the file
+	for _, entry := range metadata.TOC {
+		line := fmt.Sprintf("%s %d %d %s %s\n", entry.FileName, entry.StartOffset, entry.EndOffset,
+			hex.EncodeToString(entry.MinKey), hex.EncodeToString(entry.MaxKey))
+		_, err := file.WriteString(line)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Serialize and write the MerkleRoot hash to the file as a hexadecimal string
+	merkleRootHash := serializeMerkleTree(metadata.MerkleRoot)
+	_, err = file.WriteString(hex.EncodeToString(merkleRootHash) + "\n")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Function to serialize the Merkle tree and return its hash
+func serializeMerkleTree(root *Node) []byte {
+	if root == nil {
+		return nil
+	}
+
+	if root.Left == nil && root.Right == nil {
+		return root.Data // Leaf node, return its hash (data)
+	}
+
+	// Recursively hash the left and right subtrees
+	leftHash := serializeMerkleTree(root.Left)
+	rightHash := serializeMerkleTree(root.Right)
+
+	// Combine the hashes and return the hash of the combined data
+	combinedData := append(leftHash, rightHash...)
+	return Hash(combinedData) // Assuming you have a function Hash(data []byte) []byte to compute the hash
+}

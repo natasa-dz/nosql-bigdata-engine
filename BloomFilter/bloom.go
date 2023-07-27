@@ -2,7 +2,7 @@ package BloomFilter
 
 type Bloom2 struct {
 	m, k          int
-	bitSlices     []byte
+	BitSlices     []byte
 	hashFunctions []HashWithSeed
 }
 
@@ -13,9 +13,9 @@ func (bloom *Bloom2) InitializeBloom2(expectedElements int, falsePositiveRate fl
 	ku := CalculateK(expectedElements, mu)
 	bloom.k = int(ku)
 
-	bloom.bitSlices = make([]byte, bloom.m)
+	bloom.BitSlices = make([]byte, bloom.m)
 	for i := 0; i < bloom.m; i++ {
-		bloom.bitSlices[i] = 0
+		bloom.BitSlices[i] = 0
 	}
 
 	bloom.hashFunctions = CreateHashFunctions(uint(bloom.k))
@@ -27,7 +27,7 @@ func (bloom *Bloom2) BloomSearch2(data []byte) bool {
 
 	for _, hf := range bloom.hashFunctions {
 		hash := hf.Hash(data)
-		bit := bloom.bitSlices[int(hash%uint64(bloom.m))]
+		bit := bloom.BitSlices[int(hash%uint64(bloom.m))]
 
 		if bit == 0 {
 			exist = false
@@ -46,6 +46,6 @@ func (bloom *Bloom2) Add(data []byte) {
 
 	for _, hf := range bloom.hashFunctions {
 		hash := hf.Hash(data)
-		bloom.bitSlices[int(hash%uint64(bloom.m))] = 1
+		bloom.BitSlices[int(hash%uint64(bloom.m))] = 1
 	}
 }
