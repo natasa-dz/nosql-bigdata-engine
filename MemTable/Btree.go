@@ -1,6 +1,8 @@
 package MemTable
 
-import Log "NAiSP/Log"
+import (
+	Log "NAiSP/Log"
+)
 
 const q int = 2
 
@@ -179,20 +181,36 @@ func (t *Tree) Delete(key string) { //samo logicko brisanje izmenice tombstone, 
 	}
 }
 
-func Traverse(node *Node) []Log.Log {
-	var unsortedData []Log.Log
+func (t *Tree) Traverse(node *Node) []*Node {
+	var retVal []*Node
 
 	if node.leaf {
-		return node.keys
+		return append(retVal, node)
 	}
 
 	for !node.leaf {
 		for i := 0; i != len(node.children); i++ {
-			childKeys := Traverse(node.children[i])
-			unsortedData = append(unsortedData, childKeys...)
+			retVal = append(retVal, t.Traverse(node.children[i])...)
 		}
 	}
-	return append(unsortedData, node.keys...)
+
+	retVal = append(retVal, node)
+	return retVal
+}
+
+func (t *Tree) GetAllNodes() []*Node {
+	var allNodes []*Node
+	allNodes = t.Traverse(t.root)
+	return allNodes
+}
+
+func (t *Tree) GetAllLogs() []Log.Log {
+	allNodes := t.GetAllNodes()
+	var allLogs []Log.Log
+	for _, node := range allNodes {
+		allLogs = append(allLogs, node.keys...)
+	}
+	return allLogs
 }
 
 //func main() {
