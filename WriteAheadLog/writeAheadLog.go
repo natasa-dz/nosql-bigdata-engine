@@ -1,4 +1,4 @@
-package main
+package WriteAheadLog
 
 import (
 	log "NAiSP/Log"

@@ -22,7 +22,7 @@ type Summary struct {
 
 // da li drzimo sve ili samo prvi i poslednji index?
 
-func buildSummary(data []IndexEntry) Summary {
+func BuildSummary(data []IndexEntry) Summary {
 
 	// Sort the Data slice based on keys to ensure it is properly ordered
 	sort.Slice(data, func(i, j int) bool {
@@ -82,6 +82,25 @@ func SerializeSummary(f *os.File, summary Summary) error {
 	}
 
 	return nil
+}
+
+func (summary Summary) Serialize() []byte {
+	// Create a buffer to store the serialized data
+	serializedSummary := new(bytes.Buffer)
+
+	// Write the StartKeySize and EndKeySize to the buffer
+	binary.Write(serializedSummary, binary.LittleEndian, summary.StartKeySize)
+	binary.Write(serializedSummary, binary.LittleEndian, summary.EndKeySize)
+
+	// Write the StartKey and EndKey to the buffer as bytes
+	binary.Write(serializedSummary, binary.LittleEndian, []byte(summary.StartKey))
+	binary.Write(serializedSummary, binary.LittleEndian, []byte(summary.EndKey))
+
+	// Serialize the Indexes and append it to the buffer
+	serializedIndexes := summary.Indexes.SerializeIndexes()
+	serializedSummary.Write(serializedIndexes)
+
+	return serializedSummary.Bytes()
 }
 
 // deserializeSummary deserializes the serializedSummary byte slice into a Summary struct.

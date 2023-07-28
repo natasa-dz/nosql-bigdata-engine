@@ -4,31 +4,30 @@ package SSTable
 
 import (
 	. "NAiSP/BloomFilter"
-	"NAiSP/Log"
+	. "NAiSP/Log"
 	. "NAiSP/merkleTree"
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"sort"
 	"strconv"
-	"strings"
 )
 
 type SSTable struct {
 	Generation int
-	Data       []Log.Log
-	Index      map[string]int64
-	Summary    map[string]int
+	Data       []Log
+	Index      Index
+	Summary    Summary
 	Filter     Bloom2
-	TOC        TOCEntry
-	Metadata   MerkleRoot
+	//	TOC        TOCEntry
+	Metadata MerkleRoot
 }
 
-func BuildSSTable(sortedData []Log.Log, generation int) {}
+func BuildSSTable(sortedData []Log, generation int) {}
 
-func BuildDataFile(generation int, sortedData []Log.Log) {
+func BuildDataFile(generation int, sortedData []Log) {
 	var DataContent []byte
 	for _, data := range sortedData {
 		DataContent = append(DataContent, data.Serialize()...)
@@ -39,11 +38,11 @@ func BuildDataFile(generation int, sortedData []Log.Log) {
 	}
 }
 
-func BuildIndexFile(generation int, sortedData []Log.Log) int {
+func BuildIndexFile(generation int, sortedData []Log) int {
 	var IndexContent = new(bytes.Buffer)
 	for i, data := range sortedData {
-		binary.Write(IndexContent, binary.LittleEndian, data.Key)       //ispisi binarno kljuc
-		binary.Write(IndexContent, binary.LittleEndian, Log.LOG_SIZE*i) //ispisi binarno velicinu bloka puta i(prvi put 0, pa onda ide dalje..)
+		binary.Write(IndexContent, binary.LittleEndian, data.Key)   //ispisi binarno kljuc
+		binary.Write(IndexContent, binary.LittleEndian, LOG_SIZE*i) //ispisi binarno velicinu bloka puta i(prvi put 0, pa onda ide dalje..)
 	}
 	err := ioutil.WriteFile("Index-Gen-"+strconv.Itoa(generation), IndexContent.Bytes(), 0644)
 	if err != nil {
@@ -54,7 +53,72 @@ func BuildIndexFile(generation int, sortedData []Log.Log) int {
 }
 
 // STEPS- kreiraj bloom, ucitaj logs u bloom, merkle, onda za svaki tip-sacuvaj write
-func writeToMultipleFiles() {}
+func WriteToMultipleFiles(logs []*Log, FILENAME string) error {
+
+	filter := BuildFilter(logs, 100, 0.1)
+
+	indexes := BuildIndex(logs, 0)
+
+	indexData := indexes.Entries
+
+	summary := BuildSummary(indexData)
+
+	// Serialize the logs to bytes
+	var serializedLogs []byte
+	for _, log := range logs {
+		serializedLogs = append(serializedLogs, log.Serialize()...)
+	}
+
+	// Write data to SSTable file
+	sstableFile, err := os.OpenFile(FILENAME+".sst", os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer sstableFile.Close()
+
+	_, err = sstableFile.Write(serializedLogs)
+	if err != nil {
+		return err
+	}
+
+	// Write indexes to Index file
+	indexFile, err := os.OpenFile(FILENAME+".index", os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer indexFile.Close()
+
+	_, err = indexFile.Write(indexes.SerializeIndexes())
+	if err != nil {
+		return err
+	}
+
+	// Write summary to Summary file
+	summaryFile, err := os.OpenFile(FILENAME+".summary", os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer summaryFile.Close()
+
+	_, err = summaryFile.Write(summary.Serialize())
+	if err != nil {
+		return err
+	}
+
+	// Write filter to Bloom Filter file
+	filterFile, err := os.OpenFile(FILENAME+".filter", os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer filterFile.Close()
+
+	_, err = filterFile.Write(filter.Serialize())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func writeToSingleFile() {}
 
@@ -67,13 +131,13 @@ func readFromSingleFile() {}
 /* func buildFilter():
 funkcija uzima ocekivane elemente, br. ocek. el. i rate, dodaje el. u bloom i kreira bloom filter*/
 
-func BuildFilter(sortedData []Data, expectedElements int, falsePositiveRate float64) *Bloom2 {
+func BuildFilter(logs []*Log, expectedElements int, falsePositiveRate float64) *Bloom2 {
 	bloom := &Bloom2{}
 	bloom.InitializeBloom2(expectedElements, falsePositiveRate)
 
 	// Add each Key to the Bloom Filter
-	for _, data := range sortedData {
-		bloom.Add([]byte(data.Key))
+	for _, log := range logs {
+		bloom.Add(log.Key)
 	}
 
 	return bloom
@@ -122,7 +186,7 @@ func BuildMerkleTreeRoot(sortedData []Data) *Node {
 otprilike ideja- sortiraj-sortData(), kreiraj TOC, kreiraj MerkleTree-buildMerkleTreeRoot-vraca hash root-a,
 */
 
-type TOCEntry struct {
+/*type TOCEntry struct {
 	FileName    string
 	StartOffset int64
 	EndOffset   int64
@@ -199,7 +263,7 @@ func BuildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName
 
 	return metadata, nil
 }
-
+*/
 /////////////////// SORT DATA
 
 /*
@@ -245,42 +309,4 @@ func SortData(memtable map[string]Data) []Data {
 	}
 
 	return dataSlice
-}
-
-// Helper function to serialize the BloomFilter contents to a string
-func serializeBloomFilter(bloomFilter *Bloom2) string {
-	var serializedStrings []string
-
-	// Get the bit slices from the BloomFilter
-	bitSlices := bloomFilter.BitSlices
-
-	// Convert each byte of the bit slices to a hexadecimal string
-	for _, bitSlice := range bitSlices {
-		hexString := hex.EncodeToString([]byte{bitSlice})
-		serializedStrings = append(serializedStrings, hexString)
-	}
-
-	// Join the hexadecimal strings with commas
-	serializedBloom := strings.Join(serializedStrings, ",")
-
-	return serializedBloom
-}
-
-// Function to serialize the Merkle tree and return its hash
-func serializeMerkleTree(root *Node) []byte {
-	if root == nil {
-		return nil
-	}
-
-	if root.Left == nil && root.Right == nil {
-		return root.Data // Leaf node, return its hash (data)
-	}
-
-	// Recursively hash the left and right subtrees
-	leftHash := serializeMerkleTree(root.Left)
-	rightHash := serializeMerkleTree(root.Right)
-
-	// Combine the hashes and return the hash of the combined data
-	combinedData := append(leftHash, rightHash...)
-	return Hash(combinedData) // Assuming you have a function Hash(data []byte) []byte to compute the hash
 }

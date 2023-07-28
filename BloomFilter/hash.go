@@ -16,6 +16,10 @@ func (h HashWithSeed) Hash(data []byte) uint64 {
 	return binary.BigEndian.Uint64(fn.Sum(nil))
 }
 
+func (h HashWithSeed) Serialize() []byte {
+	// Assuming Seed has a fixed length of 32 bytes, we can directly return it.
+	return h.Seed
+}
 func CreateHashFunctions(k uint) []HashWithSeed {
 	h := make([]HashWithSeed, k)
 	ts := uint(time.Now().Unix()) //35632716357

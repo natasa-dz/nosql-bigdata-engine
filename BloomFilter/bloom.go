@@ -1,5 +1,10 @@
 package BloomFilter
 
+import (
+	"bytes"
+	"encoding/binary"
+)
+
 type Bloom2 struct {
 	m, k          int
 	BitSlices     []byte
@@ -48,4 +53,25 @@ func (bloom *Bloom2) Add(data []byte) {
 		hash := hf.Hash(data)
 		bloom.BitSlices[int(hash%uint64(bloom.m))] = 1
 	}
+}
+
+// Serialize serializes the Bloom2 filter to a byte slice.
+func (bloom *Bloom2) Serialize() []byte {
+	var serializedBloom = new(bytes.Buffer)
+
+	// Serialize the filter parameters
+	binary.Write(serializedBloom, binary.LittleEndian, uint64(bloom.m))
+	binary.Write(serializedBloom, binary.LittleEndian, uint64(bloom.k))
+
+	// Serialize the bit slices
+	serializedBloom.Write(bloom.BitSlices)
+
+	// Serialize the hash functions
+	for _, hf := range bloom.hashFunctions {
+		serializedHashFunc := hf.Serialize()
+		binary.Write(serializedBloom, binary.LittleEndian, uint64(len(serializedHashFunc)))
+		serializedBloom.Write(serializedHashFunc)
+	}
+
+	return serializedBloom.Bytes()
 }

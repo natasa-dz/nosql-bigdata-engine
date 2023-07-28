@@ -1,6 +1,7 @@
 package SSTable
 
 import (
+	. "NAiSP/Log"
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
@@ -21,18 +22,18 @@ type Index struct {
 	Entries []IndexEntry
 }
 
-func BuildIndex(entries []Data, initialOffset uint64) *Index {
-	// Sort the entries by Key
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Key < entries[j].Key
+func BuildIndex(logs []*Log, initialOffset uint64) *Index {
+	// Sort the logs by Key
+	sort.Slice(logs, func(i, j int) bool {
+		return string(logs[i].Key) < string(logs[j].Key)
 	})
 
 	// Create the Index entries
-	indexEntries := make([]IndexEntry, len(entries))
+	indexEntries := make([]IndexEntry, len(logs))
 	var offset = initialOffset
 
-	for i, entry := range entries {
-		encodedKey := hex.EncodeToString([]byte(entry.Key))
+	for i, log := range logs {
+		encodedKey := hex.EncodeToString([]byte(log.Key))
 		keySize := uint64(len(encodedKey))
 
 		indexEntries[i] = IndexEntry{
@@ -41,11 +42,8 @@ func BuildIndex(entries []Data, initialOffset uint64) *Index {
 			Offset:  offset,
 		}
 
-		// Calculate the offset for the next entry-
-		//da li treba 2 osmice ili jedna?-proveri sa dzipijem, sta si htela ovde?
-
+		// Calculate the offset for the next entry
 		offset += 8 + keySize + 8 // 8 bytes for each uint64 field
-
 	}
 
 	// Create the Index object

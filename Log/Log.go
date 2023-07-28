@@ -72,7 +72,7 @@ func (log Log) Serialize() []byte {
 	return serializedLog.Bytes()
 }
 
-func DeserializeRecord(serializedRecord []byte) Log {
+func Deserialize(serializedRecord []byte) Log {
 	var ret Log
 
 	ret.CRC = binary.LittleEndian.Uint32(serializedRecord[:CRC_SIZE])
