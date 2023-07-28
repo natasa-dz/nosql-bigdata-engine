@@ -41,8 +41,11 @@ func BuildIndex(entries []Data, initialOffset uint64) *Index {
 			Offset:  offset,
 		}
 
-		// Calculate the offset for the next entry
+		// Calculate the offset for the next entry-
+		//da li treba 2 osmice ili jedna?-proveri sa dzipijem, sta si htela ovde?
+
 		offset += 8 + keySize + 8 // 8 bytes for each uint64 field
+
 	}
 
 	// Create the Index object
@@ -74,6 +77,7 @@ func DeserializeIndexEntry(serializedIndex []byte) IndexEntry {
 
 // Serialize an Index to bytes
 func (index Index) SerializeIndexes() []byte {
+
 	var serializedIndexes = new(bytes.Buffer)
 
 	for _, entry := range index.Entries {

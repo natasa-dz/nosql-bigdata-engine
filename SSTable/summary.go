@@ -19,6 +19,9 @@ type Summary struct {
 // buildSummary constructs the Summary from the provided Data slice.
 
 // pretpostavka da imamo data i da sadrzi sve info sto nam treba!
+
+// da li drzimo sve ili samo prvi i poslednji index?
+
 func buildSummary(data []IndexEntry) Summary {
 
 	// Sort the Data slice based on keys to ensure it is properly ordered
@@ -83,6 +86,7 @@ func SerializeSummary(f *os.File, summary Summary) error {
 
 // deserializeSummary deserializes the serializedSummary byte slice into a Summary struct.
 func DeserializeSummary(serializedSummary []byte) Summary {
+
 	var startKeySize = binary.LittleEndian.Uint64(serializedSummary[:8])
 	var endKeySize = binary.LittleEndian.Uint64(serializedSummary[8:16])
 	var startKey = string(serializedSummary[16 : 16+startKeySize])

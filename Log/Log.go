@@ -1,6 +1,9 @@
 package Log
 
 import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
 	"hash/crc32"
 	"time"
 )
@@ -53,4 +56,41 @@ func CreateLog(key []byte, value []byte) *Log {
 	log := Log{Key: key, Value: value, Tombstone: true, Timestamp: time.Now().Unix(), KeySize: KEY_SIZE_SIZE, ValueSize: VALUE_SIZE_SIZE}
 	log.CRC = CRC32(log.Value)
 	return &log
+}
+
+func (log Log) Serialize() []byte {
+	var serializedLog = new(bytes.Buffer)
+
+	binary.Write(serializedLog, binary.LittleEndian, log.CRC)
+	binary.Write(serializedLog, binary.LittleEndian, log.Timestamp)
+	binary.Write(serializedLog, binary.LittleEndian, log.Tombstone)
+	binary.Write(serializedLog, binary.LittleEndian, log.KeySize)
+	binary.Write(serializedLog, binary.LittleEndian, log.ValueSize)
+	binary.Write(serializedLog, binary.LittleEndian, []byte(log.Key))
+	binary.Write(serializedLog, binary.LittleEndian, log.Value)
+	return serializedLog.Bytes()
+}
+
+func DeserializeRecord(serializedRecord []byte) Log {
+	var ret Log
+
+	ret.CRC = binary.LittleEndian.Uint32(serializedRecord[:CRC_SIZE])
+
+	ret.KeySize = int64(binary.LittleEndian.Uint64(serializedRecord[CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE : CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE]))
+
+	ret.ValueSize = int64(binary.LittleEndian.Uint64(serializedRecord[CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE : CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE+VALUE_SIZE_SIZE]))
+
+	ret.Key = []byte(fmt.Sprintf("%s", serializedRecord[CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE+VALUE_SIZE_SIZE:CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE+VALUE_SIZE_SIZE+ret.KeySize]))
+
+	ret.Value = serializedRecord[CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE+VALUE_SIZE_SIZE+ret.KeySize : CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE+VALUE_SIZE_SIZE+ret.KeySize+ret.ValueSize]
+
+	ret.Timestamp = int64(uint64(binary.LittleEndian.Uint64(serializedRecord[CRC_SIZE : CRC_SIZE+TIMESTAMP_SIZE])))
+
+	if serializedRecord[CRC_SIZE+TIMESTAMP_SIZE] == 1 {
+		ret.Tombstone = true
+	} else {
+		ret.Tombstone = false
+	}
+
+	return ret
 }

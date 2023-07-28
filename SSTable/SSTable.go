@@ -4,18 +4,16 @@ package SSTable
 
 import (
 	. "NAiSP/BloomFilter"
+	"NAiSP/Log"
 	. "NAiSP/merkleTree"
 	"encoding/hex"
-	"fmt"
-	"io/ioutil"
-	"os"
 	"sort"
 	"strings"
 )
 
 type SSTable struct {
 	Generation int
-	Data       []Data
+	Data       []Log.Log
 	Index      map[string]int64
 	Summary    map[string]int
 	Filter     Bloom2
@@ -23,99 +21,25 @@ type SSTable struct {
 	Metadata   MerkleRoot
 }
 
-///////////////////////// SUMMARY
+func BuildSSTable(sortedData []Log.Log, generation int) {}
 
-type SummaryEntry struct {
-	Key    string
-	Offset int64
-	Size   int64
-}
-
-type Summary struct {
-	Entries []SummaryEntry
-}
-
-//IZMENI SUMMARY-dodaj da uzima 0 i n-ti element, ofset indexa i u summary ofset
-
-func BuildSummary(entries []Data, generation int) *Summary {
-	// Sort the entries by Key
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Key < entries[j].Key
-	})
-
-	// Create the filename for the Summary file
-	filename := fmt.Sprintf("usertable-%d-Summary.txt", generation)
-
-	// Create the Summary entries
-	summaryEntries := make([]SummaryEntry, len(entries))
-	var offset int64
-
-	for i, entry := range entries {
-
-		encodedKey := hex.EncodeToString([]byte(entry.Key))
-		summaryEntries[i] = SummaryEntry{
-			Key:    encodedKey,
-			Offset: offset,
-			Size:   int64(len(entry.Value)),
-		}
-		offset += int64(len(entry.Value))
-	}
-
-	// Create the contents of the Summary file
-	summaryContents := "Key\tOffset\tSize\n"
-	for _, entry := range summaryEntries {
-		summaryContents += fmt.Sprintf("%s\t%d\t%d\n", entry.Key, entry.Offset, entry.Size)
-	}
-
-	// Write the contents to the Summary file
-	err := ioutil.WriteFile(filename, []byte(summaryContents), 0644)
-	if err != nil {
-		fmt.Println("Error writing Summary file:", err)
-		return nil // Return nil in case of an error
-	}
-
-	fmt.Println("Summary file created:", filename)
-
-	// Create and return the Summary object
-	return &Summary{
-		Entries: summaryEntries,
+func BuildDataFile(sortedData []Log.Log) {
+	var x []byte
+	for _, data := range sortedData {
+		x = append(x, data.Serialize()...)
 	}
 }
 
-///////////////////////// INDEX
+// STEPS- kreiraj bloom, ucitaj logs u bloom, merkle, onda za svaki tip-sacuvaj write
+func writeToMultipleFiles() {}
 
-type IndexEntry struct {
-	Key   string
-	Index int64
-}
+func writeToSingleFile() {}
 
-type Index struct {
-	Entries []IndexEntry
-}
+func readFromMultipleFiles() {}
 
-func BuildIndex(entries []Data) *Index {
-	// Sort the entries by Key
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Key < entries[j].Key
-	})
+func readFromSingleFile() {}
 
-	// Create the Index entries
-	indexEntries := make([]IndexEntry, len(entries))
-	for i, entry := range entries {
-		encodedKey := hex.EncodeToString([]byte(entry.Key))
-		indexEntries[i] = IndexEntry{
-			Key:   encodedKey,
-			Index: entry.Index,
-		}
-	}
-
-	// Create the Index object
-	index := &Index{
-		Entries: indexEntries,
-	}
-
-	return index
-}
+// delete, deleteMultiple, readRecords---> implementiraj?
 
 /* func buildFilter():
 funkcija uzima ocekivane elemente, br. ocek. el. i rate, dodaje el. u bloom i kreira bloom filter*/
@@ -253,33 +177,6 @@ func BuildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName
 	return metadata, nil
 }
 
-func WriteSSTableToDisk(fileName string, sortedData []Data) (int64, error) {
-	// Open the file for writing
-	file, err := os.Create(fileName)
-	if err != nil {
-		return 0, err
-	}
-	defer file.Close()
-
-	// Write the sorted data to the file in CSV format
-	for _, data := range sortedData {
-		// Use CSV format: "key,value\n"
-		line := fmt.Sprintf("%s,%s\n", data.Key, data.Value)
-		_, err := file.WriteString(line)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	// Get the file size after writing the data
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return 0, err
-	}
-
-	return fileInfo.Size(), nil
-}
-
 /////////////////// SORT DATA
 
 /*
@@ -327,106 +224,6 @@ func SortData(memtable map[string]Data) []Data {
 	return dataSlice
 }
 
-///////////////////////////////// 3. stavka vezbi
-
-// Function to save Data to disk with the specified naming format
-func SaveDataToDisk(sortedData []Data, generation int) error {
-	// Create the filename for the Data file
-	filename := fmt.Sprintf("usertable-%d-Data.db", generation)
-
-	// Open the file for writing
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Write the sorted data to the file in CSV format
-	for _, data := range sortedData {
-		// Use CSV format: "key,value\n"
-		line := fmt.Sprintf("%s,%s\n", data.Key, data.Value)
-		_, err := file.WriteString(line)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// Function to save Index to disk with the specified naming format
-func SaveIndexToDisk(index *Index, generation int) error {
-	// Create the filename for the Index file
-	filename := fmt.Sprintf("usertable-%d-Index.db", generation)
-
-	// Open the file for writing
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Write the Index entries to the file
-	for _, entry := range index.Entries {
-		line := fmt.Sprintf("%s,%d\n", entry.Key, entry.Index)
-		_, err := file.WriteString(line)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// Function to save Summary to disk with the specified naming format
-func SaveSummaryToDisk(summary *Summary, generation int) error {
-	// Create the filename for the Summary file
-	filename := fmt.Sprintf("usertable-%d-Summary.txt", generation)
-
-	// Open the file for writing
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Write the Summary entries to the file
-	file.WriteString("Key\tOffset\tSize\n")
-	for _, entry := range summary.Entries {
-		line := fmt.Sprintf("%s\t%d\t%d\n", entry.Key, entry.Offset, entry.Size)
-		_, err := file.WriteString(line)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// Function to save BloomFilter to disk with the specified naming format
-func SaveBloomFilterToDisk(bloomFilter *Bloom2, generation int) error {
-	// Create the filename for the BloomFilter file
-	filename := fmt.Sprintf("usertable-%d-Filter.txt", generation)
-
-	// Open the file for writing
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Serialize the BloomFilter contents to a string
-	serializedBloom := serializeBloomFilter(bloomFilter)
-
-	// Write the BloomFilter contents to the file
-	_, err = file.WriteString(serializedBloom)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Helper function to serialize the BloomFilter contents to a string
 func serializeBloomFilter(bloomFilter *Bloom2) string {
 	var serializedStrings []string
@@ -444,99 +241,6 @@ func serializeBloomFilter(bloomFilter *Bloom2) string {
 	serializedBloom := strings.Join(serializedStrings, ",")
 
 	return serializedBloom
-}
-
-// Function to save TOC to disk with the specified naming format
-func SaveTOCToDisk(toc TOC, generation int) error {
-	// Create the filename for the TOC file
-	filename := fmt.Sprintf("usertable-%d-TOC.txt", generation)
-
-	// Open the file for writing
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Write the TOC entries to the file
-	for _, entry := range toc {
-		line := fmt.Sprintf("%s %d %d %s %s\n", entry.FileName, entry.StartOffset, entry.EndOffset,
-			hex.EncodeToString(entry.MinKey), hex.EncodeToString(entry.MaxKey))
-		_, err := file.WriteString(line)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// Function to save Metadata to disk with the specified naming format
-func SaveMetadataToDisk(metadata *Metadata, generation int) error {
-	// Create the filename for the Metadata file
-	filename := fmt.Sprintf("usertable-%d-Metadata.txt", generation)
-
-	// Open the file for writing
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Write the Version to the file
-	_, err = file.WriteString(metadata.Version + "\n")
-	if err != nil {
-		return err
-	}
-
-	// Write the DataSummary entries to the file
-	for _, entry := range metadata.DataSummary.Entries {
-		line := fmt.Sprintf("%s %d %d\n", entry.Key, entry.Offset, entry.Size)
-		_, err := file.WriteString(line)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Write the BloomFilter contents to the file
-	for _, bit := range metadata.BloomFilter.BitSlices {
-		_, err := file.WriteString(fmt.Sprintf("%d ", bit))
-		if err != nil {
-			return err
-		}
-	}
-	_, err = file.WriteString("\n")
-	if err != nil {
-		return err
-	}
-
-	// Write the SSTableIndex entries to the file
-	for _, entry := range metadata.SSTableIndex.Entries {
-		line := fmt.Sprintf("%s %d\n", entry.Key, entry.Index)
-		_, err := file.WriteString(line)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Write the TOC entries to the file
-	for _, entry := range metadata.TOC {
-		line := fmt.Sprintf("%s %d %d %s %s\n", entry.FileName, entry.StartOffset, entry.EndOffset,
-			hex.EncodeToString(entry.MinKey), hex.EncodeToString(entry.MaxKey))
-		_, err := file.WriteString(line)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Serialize and write the MerkleRoot hash to the file as a hexadecimal string
-	merkleRootHash := serializeMerkleTree(metadata.MerkleRoot)
-	_, err = file.WriteString(hex.EncodeToString(merkleRootHash) + "\n")
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Function to serialize the Merkle tree and return its hash
