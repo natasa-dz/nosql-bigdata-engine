@@ -31,6 +31,7 @@ const (
 	TOMBSTONE_SIZE  = 1
 	KEY_SIZE_SIZE   = 8
 	VALUE_SIZE_SIZE = 8
+	LOG_SIZE        = 29
 
 	LOW_WATER_MARK = 5
 	File           = "putanja koja se cita iz konfiguracije"

@@ -6,8 +6,13 @@ import (
 	. "NAiSP/BloomFilter"
 	"NAiSP/Log"
 	. "NAiSP/merkleTree"
+	"bytes"
+	"encoding/binary"
 	"encoding/hex"
+	"fmt"
+	"io/ioutil"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -23,11 +28,29 @@ type SSTable struct {
 
 func BuildSSTable(sortedData []Log.Log, generation int) {}
 
-func BuildDataFile(sortedData []Log.Log) {
-	var x []byte
+func BuildDataFile(generation int, sortedData []Log.Log) {
+	var DataContent []byte
 	for _, data := range sortedData {
-		x = append(x, data.Serialize()...)
+		DataContent = append(DataContent, data.Serialize()...)
 	}
+	err := ioutil.WriteFile("Data-Gen-"+strconv.Itoa(generation), DataContent, 0644)
+	if err != nil {
+		fmt.Println("Greska pri kreiranju Data fajla")
+	}
+}
+
+func BuildIndexFile(generation int, sortedData []Log.Log) int {
+	var IndexContent = new(bytes.Buffer)
+	for i, data := range sortedData {
+		binary.Write(IndexContent, binary.LittleEndian, data.Key)       //ispisi binarno kljuc
+		binary.Write(IndexContent, binary.LittleEndian, Log.LOG_SIZE*i) //ispisi binarno velicinu bloka puta i(prvi put 0, pa onda ide dalje..)
+	}
+	err := ioutil.WriteFile("Index-Gen-"+strconv.Itoa(generation), IndexContent.Bytes(), 0644)
+	if err != nil {
+		fmt.Println("Greska pri kreiranju Index fajla")
+	}
+	return IndexContent.Len() / len(sortedData) //vratice int koji je velicina bloka (key-adr in data) u indexu
+	//TODO: PITANJE JE DA LI CE SVAKI BLOK U INDEXU BITI ISTE VELICINE?
 }
 
 // STEPS- kreiraj bloom, ucitaj logs u bloom, merkle, onda za svaki tip-sacuvaj write
