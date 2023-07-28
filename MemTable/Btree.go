@@ -1,6 +1,8 @@
 package MemTable
 
-import Log "NAiSP/Log"
+import (
+	Log "NAiSP/Log"
+)
 
 const q int = 2
 
@@ -179,6 +181,38 @@ func (t *Tree) Delete(key string) { //samo logicko brisanje izmenice tombstone, 
 	}
 }
 
+func (t *Tree) Traverse(node *Node) []*Node {
+	var retVal []*Node
+
+	if node.leaf {
+		return append(retVal, node)
+	}
+
+	for !node.leaf {
+		for i := 0; i != len(node.children); i++ {
+			retVal = append(retVal, t.Traverse(node.children[i])...)
+		}
+	}
+
+	retVal = append(retVal, node)
+	return retVal
+}
+
+func (t *Tree) GetAllNodes() []*Node {
+	var allNodes []*Node
+	allNodes = t.Traverse(t.root)
+	return allNodes
+}
+
+func (t *Tree) GetAllLogs() []Log.Log {
+	allNodes := t.GetAllNodes()
+	var allLogs []Log.Log
+	for _, node := range allNodes {
+		allLogs = append(allLogs, node.keys...)
+	}
+	return allLogs
+}
+
 //func main() {
 //TEST1
 //var t Tree
@@ -203,153 +237,4 @@ func (t *Tree) Delete(key string) { //samo logicko brisanje izmenice tombstone, 
 //t.Insert(80)
 //t.Insert(90)
 //t.Insert(100)
-//}
-
-// ==================================================DELETION=======================================================================
-
-// =====================OVAJ DEO CE VEROVATNO BITI TOTALNO NEKORISCEN I NEPOTREBAN(PROCITAJ LINIJU ISPOD)==================================
-//AKO OVO BUDES TREBAO DA OTKOMENTARISES PRVO U OVOM OGROMNOM ZAKOMENTARISANOM KODU PRETRAZI 'URADITI:' I ZAMENI GA SA 'T O D O'
-//IZMENIO SAM TA DVA DA MI NE BI STAJALO U TASK LISTI STVARI KOJE NE TREBA DA RADIM
-// helpers from stack overflow(neke sam i ja kucao)
-//func (node *Node) RemoveKeyFromNode(keyToRemove int) {
-//	var result []int
-//
-//	for _, v := range node.keys {
-//		if v != keyToRemove {
-//			result = append(result, v)
-//		}
-//	}
-//
-//	node.keys = result
-//}
-//func (node *Node) RemoveChildByIndex(index int) {
-//	if index < 0 || index >= len(node.children) {
-//		return // Index out of range, do nothing
-//	}
-//
-//	node.children = append(node.children[:index], node.children[index+1:]...)
-//}
-//func (node *Node) GetChildToContinueDeletion(key int) int {
-//	for ind, val := range node.keys {
-//		if val > key {
-//			return ind
-//		}
-//	}
-//	return len(node.keys)
-//}
-//func (node *Node) findKeyIndex(key int) int {
-//	for i, v := range node.keys {
-//		if v == node.keys[i] {
-//			return i
-//		}
-//	}
-//	return -1 // Value not found in the list
-//}
-//
-//// deletion functions
-//func (t *Tree) Delete(key int) {
-//	if t.root == nil {
-//		fmt.Print("Prazno stablo")
-//		return
-//	}
-//
-//	var end bool = false
-//	x := t.root
-//	for end != true {
-//		if x.Contains(key) {
-//			if x.leaf {
-//				x.DeleteFromLeaf(key)
-//				end = true
-//			} else {
-//				x.DeleteFromNonLeaf(key)
-//				end = true
-//			}
-//		} else {
-//			if x.leaf {
-//				fmt.Print("Nema kljuca u stablu")
-//				return
-//			}
-//
-//			childIndex := x.GetChildToContinueDeletion(key) //treba ti index koje dete ces da proveris da li ima dovoljno kljuceva
-//			if len(x.children[childIndex].keys) < q {
-//				x.FillNode(childIndex)
-//			}
-//			x = x.children[childIndex]
-//		}
-//	}
-//
-//	//y = nil // mesto gde se cuva roditelj od x
-//	//
-//	//for x.Contains(key) != true {
-//	//	if x.leaf == true {
-//	//		//URADITI: nema kljuca
-//	//	} else {
-//	//		//URADITI: nadji dobrog childa -> proveri da li ima t kljuceva
-//	//		/* if nema min t kljuceva -> odredi nacin da spustis kljuc iz x dole(Fill) -> spusti se dole i zovi brisanje
-//	//		 */
-//	//	}
-//	//}
-//	//if x.leaf == true {
-//	//	if len(x.keys) >= q {
-//	//		x.DeleteFromLeaf(key)
-//	//	} else {
-//	//		x.DeleteFromLeaf(key)
-//	//
-//	//	}
-//	//} else {
-//	//	//URADITI: obrisi, a da nije leaf, drugacija fja
-//	//}
-//}
-//
-//func (node *Node) DeleteFromLeaf(key int) {
-//	node.RemoveKeyFromNode(key)
-//}
-//
-//func (node *Node) FillNode(index int) {
-//	if len(node.children[index-1].keys) >= q { //URADITI: a sta cemo sa decom ovde jel to predstavlja problem?
-//		node.InsertNonFull(node.children[index-1].keys[len(node.children[index-1].keys)-1], nil)                  //uzmi poslednji(najveci) kljuc levog deteta i sibni gore
-//		node.children[index-1].RemoveKeyFromNode(node.children[index-1].keys[len(node.children[index-1].keys)-1]) //izbaci poslednji iz levog deteta
-//		node.children[index].InsertNonFull(node.keys[index], nil)
-//		node.RemoveKeyFromNode(node.keys[index])
-//	} else if len(node.children[index+1].keys) >= q {
-//		node.InsertNonFull(node.children[index+1].keys[0], nil) //isto ko gore samo za desni
-//		node.children[index+1].RemoveKeyFromNode(node.children[index+1].keys[0])
-//		node.children[index].InsertNonFull(node.keys[index], nil)
-//		node.RemoveKeyFromNode(node.keys[index])
-//	} else {
-//		vrednostiKljucevaKojeSeBrisuIzParenta := []int{}
-//		for i := len(node.children[index-1].keys) - 1; i != -1; i-- {
-//			if i <= index {
-//				node.children[index].InsertNonFull(node.keys[i], nil)
-//				vrednostiKljucevaKojeSeBrisuIzParenta = append(vrednostiKljucevaKojeSeBrisuIzParenta, node.keys[i])
-//			}
-//			node.children[index].InsertNonFull(node.children[index-1].keys[i], nil)
-//			node.InsertNodeArray(0, node.children[index-1].children[i])
-//		}
-//		node.RemoveChildByIndex(index - 1)
-//		for _, vrKljucaZaBrisanjeIzParenta := range vrednostiKljucevaKojeSeBrisuIzParenta {
-//			node.RemoveKeyFromNode(vrKljucaZaBrisanjeIzParenta)
-//		}
-//	}
-//}
-//
-//func (node *Node) DeleteFromNonLeaf(key int) {
-//	indexOfKeyToDelete := node.findKeyIndex(key)
-//	if len(node.children[indexOfKeyToDelete].keys) >= q { //leva strana
-//		node.keys[indexOfKeyToDelete] = node.children[indexOfKeyToDelete].keys[len(node.children[indexOfKeyToDelete].keys)]
-//		node.children[indexOfKeyToDelete].RemoveKeyFromNode(node.keys[indexOfKeyToDelete])
-//	} else if len(node.children[indexOfKeyToDelete+1].keys) >= q {
-//		node.keys[indexOfKeyToDelete] = node.children[indexOfKeyToDelete+1].keys[0]
-//		node.children[indexOfKeyToDelete+1].RemoveKeyFromNode(node.keys[indexOfKeyToDelete])
-//	} else {
-//		for i := len(node.children[indexOfKeyToDelete-1].keys) - 1; i != -1; i-- {
-//			node.children[indexOfKeyToDelete].InsertNonFull(node.children[indexOfKeyToDelete-1].keys[i], nil)
-//			node.InsertNodeArray(0, node.children[indexOfKeyToDelete-1].children[i])
-//		}
-//		node.RemoveKeyFromNode(key)
-//		node.RemoveChildByIndex(indexOfKeyToDelete - 1)
-//		//URADITI: After merging if the parent node has less than the minimum number of keys then, look for the siblings as in Case I.
-//		//videti sutra jos ovo al nmg nista mi ovo ne vredi (sem da predjem u glavi ja to) dok ne resim Insert...
-//	}
-//	//URADITI: ostao mi je i Case III koji nisam ni pogledao jer ga nema u pseudo kodu na ChatGPT, zato nez dal to treba da radim ovde uopste ili je vec pokriveno jer je ovo sve kombinacija sajta i ChatGPT
 //}
