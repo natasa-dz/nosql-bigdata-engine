@@ -16,12 +16,6 @@ type Summary struct {
 	Indexes      Index
 }
 
-// buildSummary constructs the Summary from the provided Data slice.
-
-// pretpostavka da imamo data i da sadrzi sve info sto nam treba!
-
-// da li drzimo sve ili samo prvi i poslednji index?
-
 func BuildSummary(data []IndexEntry) Summary {
 
 	// Sort the Data slice based on keys to ensure it is properly ordered
@@ -123,7 +117,7 @@ func DeserializeSummary(serializedSummary []byte) Summary {
 	}
 }
 
-func IsKeyInSummaryFile(key []byte, file *os.File) bool {
+func IsKeyInSummary(key []byte, file *os.File) bool {
 	summary, err := ReadSummary(file)
 
 	if err != nil {
@@ -175,4 +169,61 @@ func ReadSummary(file *os.File) (Summary, error) {
 	}
 
 	return summary, nil
+}
+
+// FindIndexEntry finds the index entry for the given key in the SSTable file.
+func FindIndexEntry(key []byte, file *os.File) (*IndexEntry, error) {
+	// Read the summary from the file
+	summary, err := ReadSummary(file)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the key is within the boundaries of the SSTable
+	if bytes.Compare(key, []byte(summary.StartKey)) < 0 || bytes.Compare(key, []byte(summary.EndKey)) > 0 {
+		return nil, fmt.Errorf("key not found in SSTable")
+	}
+
+	// Get the size of the summary and indexes section in bytes
+	summarySize := 16 + summary.StartKeySize + summary.EndKeySize
+	file.Seek(-int64(summarySize), os.SEEK_END)
+
+	// Read the serialized indexes from the file
+	serializedIndexes := make([]byte, summarySize)
+	_, err = file.Read(serializedIndexes)
+	if err != nil {
+		return nil, err
+	}
+
+	// Deserialize the summary and indexes
+	summary = DeserializeSummary(serializedIndexes[:summarySize])
+	indexes := DeserializeIndexes(serializedIndexes[summarySize:])
+
+	// Use binary search to find the index entry with the closest key
+	indexEntry := SearchIndexEntry(indexes.Entries, key)
+	return indexEntry, nil
+}
+
+func SearchIndexEntry(entries []IndexEntry, key []byte) *IndexEntry {
+	// Binary search implementation to find the closest index entry
+	low, high := 0, len(entries)-1
+	for low <= high {
+		mid := (low + high) / 2
+		currentKey := []byte(entries[mid].Key)
+
+		if bytes.Compare(key, currentKey) == 0 {
+			// Found an exact match
+			return &entries[mid]
+		} else if bytes.Compare(key, currentKey) < 0 {
+			// Key is smaller, search in the left half
+			high = mid - 1
+		} else {
+			// Key is larger, search in the right half
+			low = mid + 1
+		}
+	}
+
+	// If the loop terminates without finding an exact match, 'low' will point to the closest larger element.
+	// We return the previous index entry as the closest match.
+	return &entries[low-1]
 }
