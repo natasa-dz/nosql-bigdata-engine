@@ -40,12 +40,22 @@ func main() {
 
 	logs := []*Log{log1, log2, log3}
 
-	// Call writeToMultipleFiles function
-	err := WriteToMultipleFiles(logs, "test_file")
+	// Call writeToSingleFile function
+	err := WriteToSingleFile(logs, "singleTest")
 	if err != nil {
-		fmt.Println("Error writing to multiple files:", err)
+		fmt.Println("Error writing to a single file:", err)
 		return
 	}
 
-	fmt.Println("Data written to multiple files successfully!")
+	fmt.Println("Data written to a single file successfully!")
+
+	/*	// Call writeToMultipleFiles function
+		err := WriteToMultipleFiles(logs, 1, "test")
+		if err != nil {
+			fmt.Println("Error writing to multiple files:", err)
+			return
+		}
+
+		fmt.Println("Data written to multiple files successfully!")*/
+
 }

@@ -53,14 +53,16 @@ func BuildIndexFile(generation int, sortedData []Log) int {
 }
 
 // STEPS- kreiraj bloom, ucitaj logs u bloom, merkle, onda za svaki tip-sacuvaj write
-func WriteToMultipleFiles(logs []*Log, FILENAME string) error {
+func WriteToMultipleFiles(logs []*Log, generation int, FILENAME string) error {
+	// Build Bloom Filter
 
-	filter := BuildFilter(logs, 100, 0.1)
+	filter := BuildFilter(logs, len(logs), 0.1)
 
+	// Build Index
 	indexes := BuildIndex(logs, 0)
-
 	indexData := indexes.Entries
 
+	// Build Summary
 	summary := BuildSummary(indexData)
 
 	// Serialize the logs to bytes
@@ -70,7 +72,7 @@ func WriteToMultipleFiles(logs []*Log, FILENAME string) error {
 	}
 
 	// Write data to SSTable file
-	sstableFile, err := os.OpenFile(FILENAME+".sst", os.O_WRONLY|os.O_CREATE, 0666)
+	sstableFile, err := os.OpenFile(fmt.Sprintf("%s-%d-Data.db", FILENAME, generation), os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
@@ -82,7 +84,7 @@ func WriteToMultipleFiles(logs []*Log, FILENAME string) error {
 	}
 
 	// Write indexes to Index file
-	indexFile, err := os.OpenFile(FILENAME+".index", os.O_WRONLY|os.O_CREATE, 0666)
+	indexFile, err := os.OpenFile(fmt.Sprintf("%s-%d-Index.db", FILENAME, generation), os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
@@ -94,7 +96,7 @@ func WriteToMultipleFiles(logs []*Log, FILENAME string) error {
 	}
 
 	// Write summary to Summary file
-	summaryFile, err := os.OpenFile(FILENAME+".summary", os.O_WRONLY|os.O_CREATE, 0666)
+	summaryFile, err := os.OpenFile(fmt.Sprintf("%s-%d-Summary.db", FILENAME, generation), os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
@@ -106,7 +108,7 @@ func WriteToMultipleFiles(logs []*Log, FILENAME string) error {
 	}
 
 	// Write filter to Bloom Filter file
-	filterFile, err := os.OpenFile(FILENAME+".filter", os.O_WRONLY|os.O_CREATE, 0666)
+	filterFile, err := os.OpenFile(fmt.Sprintf("%s-%d-Filter.db", FILENAME, generation), os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
@@ -120,11 +122,61 @@ func WriteToMultipleFiles(logs []*Log, FILENAME string) error {
 	return nil
 }
 
-func writeToSingleFile() {}
+func ReadSingleFile() {}
 
-func readFromMultipleFiles() {}
+// ReadFromMultipleFiles - TODO:Algoritam otprilike-proveri da li se trazeni kljuc nalazi u BloomFilter-u, ako se ne nalazi- predji na sledeci SSTable, ako si nasao-otvori Summary za dati SSTable nadji asocirani Log, iscitaj entrije kako bi nasli odgovarajuci, kada se sve odradi-iscitaj SSTable
+func ReadFromMultipleFiles() {}
 
-func readFromSingleFile() {}
+func WriteToSingleFile(logs []*Log, FILENAME string) error {
+	// Build Bloom Filter
+	filter := BuildFilter(logs, len(logs), 0.1)
+
+	// Build Index
+	indexes := BuildIndex(logs, 0)
+	indexData := indexes.Entries
+
+	// Build Summary
+	summary := BuildSummary(indexData)
+
+	// Serialize the logs to bytes
+	var serializedLogs []byte
+	for _, log := range logs {
+		serializedLogs = append(serializedLogs, log.Serialize()...)
+	}
+
+	// Open the SSTable file
+	sstableFile, err := os.OpenFile(fmt.Sprintf("%s.db", FILENAME), os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer sstableFile.Close()
+
+	// Write the Bloom Filter to the file
+	_, err = sstableFile.Write(filter.Serialize())
+	if err != nil {
+		return err
+	}
+
+	// Write the Summary to the file
+	_, err = sstableFile.Write(summary.Serialize())
+	if err != nil {
+		return err
+	}
+
+	// Write the Indexes to the file
+	_, err = sstableFile.Write(indexes.SerializeIndexes())
+	if err != nil {
+		return err
+	}
+
+	// Write the logs to the file
+	_, err = sstableFile.Write(serializedLogs)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // delete, deleteMultiple, readRecords---> implementiraj?
 
