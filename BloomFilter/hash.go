@@ -3,6 +3,7 @@ package BloomFilter
 import (
 	"crypto/md5"
 	"encoding/binary"
+	"fmt"
 	"time"
 )
 
@@ -17,9 +18,38 @@ func (h HashWithSeed) Hash(data []byte) uint64 {
 }
 
 func (h HashWithSeed) Serialize() []byte {
-	// Assuming Seed has a fixed length of 32 bytes, we can directly return it.
-	return h.Seed
+	// First, serialize the length of the Seed.
+	seedLen := uint32(len(h.Seed))
+	seedLenBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(seedLenBytes, seedLen)
+
+	// Next, append the length bytes and the Seed bytes together.
+	serializedData := append(seedLenBytes, h.Seed...)
+
+	return serializedData
 }
+
+func (h *HashWithSeed) Deserialize(data []byte) error {
+	// Ensure that the data is at least 4 bytes (length of Seed length).
+	if len(data) < 4 {
+		return fmt.Errorf("invalid serialized data for HashWithSeed")
+	}
+
+	// Extract the Seed length from the first 4 bytes.
+	seedLen := binary.LittleEndian.Uint32(data[:4])
+
+	// Ensure that the data contains enough bytes for the Seed.
+	if len(data) < int(4+seedLen) {
+		return fmt.Errorf("invalid serialized data for HashWithSeed")
+	}
+
+	// Extract the Seed bytes.
+	h.Seed = make([]byte, seedLen)
+	copy(h.Seed, data[4:4+seedLen])
+
+	return nil
+}
+
 func CreateHashFunctions(k uint) []HashWithSeed {
 	h := make([]HashWithSeed, k)
 	ts := uint(time.Now().Unix()) //35632716357
