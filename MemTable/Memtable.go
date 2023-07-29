@@ -131,7 +131,7 @@ func (table *Memtable) Insert(data Log.Log) {
 	} else {
 		table.tableStruct.Insert(data)
 		if (float64(table.tableStruct.GetNumOfElements()) / float64(table.size)) > table.trashold {
-			unsortedData := table.tableStruct.GetAllLogs()
+			//unsortedData := table.tableStruct.GetAllLogs()
 			//table.Flush() TODO Flushuj i zameni tabele ili isprazni kako god ti volja
 		}
 	}

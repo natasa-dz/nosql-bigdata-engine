@@ -1,4 +1,4 @@
-package main
+package LSM
 
 //LSM stabla se sastoje od SSTableova?
 //LSM je struktura podataka tako dizajnirana da jefitino indeksira datoteke koje imaju veliku stopu brisanja i dodavanja
