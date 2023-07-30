@@ -42,6 +42,7 @@ func BuildSSTableMultiple(sortedData []Log, generation int) {
 	WriteSummaryHeader(sortedData, SummaryContent) //u summary ce ispisati prvi i poslednji kljuc iz indexa
 	for i, data := range sortedData {              //za svaki podatak
 		binary.Write(DataContent, binary.LittleEndian, data.Serialize()) //ubaci ga u baffer
+		//TODO: OVO TREBA UPROSTITI VIDETI STA CEMO SA TIME...
 		if i == 0 {
 			WriteSummaryLog(SummaryContent, sortedData[i].KeySize, sortedData[i].Key, 0) //ubaci prvi u baffer i offset u indexu ce biti 0
 		}
@@ -188,56 +189,6 @@ func WriteToSingleFile(logs []*Log, FILENAME string) error {
 }
 
 // delete, deleteMultiple, readRecords---> implementiraj?
-
-// funkcija uzima ocekivane elemente, br. ocek. el. i rate, dodaje el. u bloom i kreira bloom filter*/
-func BuildFilter(logs []Log, expectedElements int, falsePositiveRate float64) *Bloom2 {
-	bloom := Bloom2{}
-	bloom.InitializeBloom2(expectedElements, falsePositiveRate)
-
-	// Add each Key to the Bloom Filter
-	for _, log := range logs {
-		bloom.Add(log.Key)
-	}
-
-	return &bloom
-}
-
-// bottom-up izgradnja, pretpostavka da imamo key:value parove!!!!!!!!
-
-func BuildMerkleTreeRoot(sortedData []Log) *Node {
-	// Create leaf nodes for each data entry and hash them individually.
-	var leafNodes []*Node
-	for _, data := range sortedData {
-		node := &Node{
-			Data: append(data.Key, data.Value...), // Concatenate Key and Value for simplicity
-		}
-		leafNodes = append(leafNodes, node)
-	}
-
-	// Build the Merkle tree by combining and hashing pairs of nodes.
-	for len(leafNodes) > 1 {
-		var newLevel []*Node
-
-		for i := 0; i < len(leafNodes); i += 2 {
-			if i+1 < len(leafNodes) {
-				newNode := &Node{
-					Data:  Hash(append(leafNodes[i].Data, leafNodes[i+1].Data...)),
-					Left:  leafNodes[i],
-					Right: leafNodes[i+1],
-				}
-				newLevel = append(newLevel, newNode)
-			} else {
-				// If there's an odd number of nodes, simply add the last node to the new level.
-				newLevel = append(newLevel, leafNodes[i])
-			}
-		}
-
-		leafNodes = newLevel
-	}
-
-	// The last remaining node is the root of the Merkle tree.
-	return leafNodes[0]
-}
 
 ///////////////////// META DATA	===> NE BRISI OVO DOLE!!!!!
 

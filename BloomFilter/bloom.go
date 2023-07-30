@@ -1,6 +1,7 @@
 package BloomFilter
 
 import (
+	. "NAiSP/Log"
 	"bytes"
 	"encoding/binary"
 	"io"
@@ -13,7 +14,7 @@ type Bloom2 struct {
 	HashFunctions []HashWithSeed
 }
 
-func (bloom *Bloom2) InitializeBloom2(expectedElements int, falsePositiveRate float64) {
+func (bloom *Bloom2) InitializeEmptyBloom2(expectedElements int, falsePositiveRate float64) {
 	mu := CalculateM(expectedElements, falsePositiveRate)
 	bloom.M = int(mu)
 
@@ -123,4 +124,17 @@ func ReadBloom(file *os.File, offset int64) *Bloom2 {
 	}
 
 	return bloom
+}
+
+// funkcija uzima ocekivane elemente, br. ocek. el. i rate, dodaje el. u bloom i kreira bloom filter*/
+func BuildFilter(logs []Log, expectedElements int, falsePositiveRate float64) *Bloom2 {
+	bloom := Bloom2{}
+	bloom.InitializeEmptyBloom2(expectedElements, falsePositiveRate)
+
+	// Add each Key to the Bloom Filter
+	for _, log := range logs {
+		bloom.Add(log.Key)
+	}
+
+	return &bloom
 }
