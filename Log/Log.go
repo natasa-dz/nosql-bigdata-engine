@@ -68,7 +68,7 @@ func (log Log) Serialize() []byte {
 	binary.Write(serializedLog, binary.LittleEndian, log.Tombstone)
 	binary.Write(serializedLog, binary.LittleEndian, log.KeySize)
 	binary.Write(serializedLog, binary.LittleEndian, log.ValueSize)
-	binary.Write(serializedLog, binary.LittleEndian, []byte(log.Key))
+	binary.Write(serializedLog, binary.LittleEndian, log.Key)
 	binary.Write(serializedLog, binary.LittleEndian, log.Value)
 	return serializedLog.Bytes()
 }
@@ -127,7 +127,7 @@ func ReadLog(file *os.File) (*Log, error) {
 	} else {
 		log.Tombstone = false
 	}
-
+	fmt.Println(log.Tombstone)
 	// Read KeySize
 	var keySizeBytes = make([]byte, KEY_SIZE_SIZE)
 	_, err = file.Read(keySizeBytes)
@@ -143,7 +143,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.ValueSize = int64(binary.LittleEndian.Uint64(valueSizeBytes))
-
+	fmt.Println(log.KeySize)
 	// Read Key
 	var keyBytes = make([]byte, log.KeySize)
 	_, err = file.Read(keyBytes)
@@ -154,6 +154,7 @@ func ReadLog(file *os.File) (*Log, error) {
 
 	// Read Value
 	var valueBytes = make([]byte, log.ValueSize)
+
 	_, err = file.Read(valueBytes)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 )
@@ -117,8 +118,8 @@ func DeserializeSummary(serializedSummary []byte) Summary {
 	}
 }
 
-func IsKeyInSummary(key []byte, file *os.File) bool {
-	summary, err := ReadSummary(file)
+func IsKeyInSummary(key []byte, file *os.File, offset int64) bool {
+	summary, err := ReadSummary(file, offset)
 
 	if err != nil {
 		fmt.Println("ERRR, error!")
@@ -132,7 +133,8 @@ func IsKeyInSummary(key []byte, file *os.File) bool {
 }
 
 // readSummaryHeader reads the summary header from the file and returns the Summary struct.
-func ReadSummary(file *os.File) (Summary, error) {
+func ReadSummary(file *os.File, offset int64) (Summary, error) {
+	file.Seek(offset, io.SeekStart)
 	var startKeySize uint64
 	var endKeySize uint64
 
@@ -172,9 +174,9 @@ func ReadSummary(file *os.File) (Summary, error) {
 }
 
 // FindIndexEntry finds the index entry for the given key in the SSTable file.
-func FindIndexEntry(key []byte, file *os.File) (*IndexEntry, error) {
+func FindIndexEntry(key []byte, file *os.File, offset int64) (*IndexEntry, error) {
 	// Read the summary from the file
-	summary, err := ReadSummary(file)
+	summary, err := ReadSummary(file, offset)
 	if err != nil {
 		return nil, err
 	}

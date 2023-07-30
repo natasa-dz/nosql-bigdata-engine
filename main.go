@@ -4,6 +4,7 @@ import (
 	. "NAiSP/Log"
 	. "NAiSP/SSTable"
 	"fmt"
+	"os"
 )
 
 func main() {
@@ -57,5 +58,17 @@ func main() {
 		}
 
 		fmt.Println("Data written to multiple files successfully!")*/
+	file, err := os.Open("singleTest.db")
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		return
+	}
+	// Ensure the file is closed when the function returns
 
+	// Read binary data from the file into an integer slice
+	var data []*Log
+
+	data, _ = ReadLogs(file)
+	fmt.Println(data[0].Timestamp)
+	defer file.Close()
 }

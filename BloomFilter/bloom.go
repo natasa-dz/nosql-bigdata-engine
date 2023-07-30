@@ -3,6 +3,7 @@ package BloomFilter
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 	"os"
 )
 
@@ -78,8 +79,9 @@ func (bloom *Bloom2) Serialize() []byte {
 }
 
 // procitaj Bloom filter iz fajla
-func ReadBloom(file *os.File) *Bloom2 {
+func ReadBloom(file *os.File, offset int64) *Bloom2 {
 	var bloom = new(Bloom2)
+	file.Seek(offset, io.SeekStart)
 
 	var m, k uint64
 	var b = make([]byte, binary.Size(m))

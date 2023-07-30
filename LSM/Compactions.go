@@ -2,6 +2,10 @@ package LSM
 
 import (
 	. "NAiSP/Log"
+	"fmt"
+	"io/ioutil"
+	"strconv"
+	"strings"
 )
 
 func Merge(data1 []Log, data2 []Log) []Log {
@@ -43,7 +47,7 @@ func Merge(data1 []Log, data2 []Log) []Log {
 
 }
 
-/*func getAllFilesInDirectory(dirPath string) ([]string, error) {
+func GetAllFilesFromLevel(dirPath string, level int) ([]string, error) {
 	var files []string
 
 	// Read the directory and get a list of file and folder names
@@ -52,9 +56,15 @@ func Merge(data1 []Log, data2 []Log) []Log {
 		return nil, err
 	}
 
-	// Iterate over the fileInfos and add file names to the files slice
+	//find files from same level of LSM tree
 	for _, fileInfo := range fileInfos {
-		if !fileInfo.IsDir() {
+		numbers := strings.Split(fileInfo.Name(), "_")
+		fileLevel, err := strconv.Atoi(numbers[1])
+		if err != nil {
+			fmt.Println("Error, wrong file format:", err)
+			return nil, err
+		}
+		if !fileInfo.IsDir() && fileLevel == level {
 			files = append(files, fileInfo.Name())
 		}
 	}
@@ -64,4 +74,4 @@ func Merge(data1 []Log, data2 []Log) []Log {
 
 func CompactLevel(level int) {
 
-}*/
+}
