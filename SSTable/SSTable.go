@@ -1,7 +1,5 @@
 package SSTable
 
-/////////////////////////// OKVIRNA IMPLEMENTACIJA SSTABLE-A
-
 import (
 	. "NAiSP/BloomFilter"
 	. "NAiSP/Log"
@@ -12,7 +10,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"sort"
 	"strconv"
 )
 
@@ -27,110 +24,71 @@ type SSTable struct {
 	Metadata MerkleRoot
 }
 
-func BuildSSTable(sortedData []Log, generation int) {}
-
-func BuildDataFile(generation int, sortedData []Log) {
-	var DataContent []byte
-	for _, data := range sortedData {
-		DataContent = append(DataContent, data.Serialize()...)
-	}
-	err := ioutil.WriteFile("Data-Gen-"+strconv.Itoa(generation), DataContent, 0644)
-	if err != nil {
-		fmt.Println("Greska pri kreiranju Data fajla")
-	}
-}
-
-func BuildIndexFile(generation int, sortedData []Log) int {
+// MULTIPLE:
+func BuildSSTableMultiple(sortedData []Log, generation int) {
+	//cetri bafera za cetri razlicita fajla
+	var FilterContent = new(bytes.Buffer)
+	var DataContent = new(bytes.Buffer)
 	var IndexContent = new(bytes.Buffer)
-	for i, data := range sortedData {
-		binary.Write(IndexContent, binary.LittleEndian, data.Key)   //ispisi binarno kljuc
-		binary.Write(IndexContent, binary.LittleEndian, LOG_SIZE*i) //ispisi binarno velicinu bloka puta i(prvi put 0, pa onda ide dalje..)
+	var SummaryContent = new(bytes.Buffer)
+	var MerkleContent = new(bytes.Buffer)
+
+	filter := BuildFilter(sortedData, len(sortedData), 0.01)
+	binary.Write(FilterContent, binary.LittleEndian, filter.Serialize())
+
+	merkle := BuildMerkleTreeRoot(sortedData)
+	binary.Write(MerkleContent, binary.LittleEndian, SerializeMerkleTree(merkle))
+
+	WriteSummaryHeader(sortedData, SummaryContent) //u summary ce ispisati prvi i poslednji kljuc iz indexa
+	for i, data := range sortedData {              //za svaki podatak
+		binary.Write(DataContent, binary.LittleEndian, data.Serialize()) //ubaci ga u baffer
+		if i == 0 {
+			WriteSummaryLog(SummaryContent, sortedData[i].KeySize, sortedData[i].Key, 0) //ubaci prvi u baffer i offset u indexu ce biti 0
+		}
+		if ((i+1)%10) == 0 && i != 0 { //svaki 10. kljuc - summary napravljen u fazonu da ima jos indexa ne samo prvi i poslednji
+			WriteSummaryLog(SummaryContent, sortedData[i-1].KeySize, sortedData[i-1].Key, IndexContent.Len())
+			//kako indexEntry i dalje nije zapisan pocetak njega je trenutna duzina indexcontent buffera, dakle ubacujemo ga u summary
+		}
+		WriteIndexLog(IndexContent, data.KeySize, data.Key, LOG_SIZE*i) //tek sad pisemo indexEntry u index bafer
 	}
-	err := ioutil.WriteFile("Index-Gen-"+strconv.Itoa(generation), IndexContent.Bytes(), 0644)
-	if err != nil {
-		fmt.Println("Greska pri kreiranju Index fajla")
-	}
-	return IndexContent.Len() / len(sortedData) //vratice int koji je velicina bloka (key-adr in data) u indexu
-	//TODO: PITANJE JE DA LI CE SVAKI BLOK U INDEXU BITI ISTE VELICINE?
+
+	//fje koje ce kreirati fajlove i ispisati sadrzaj navedenih bafera
+	WriteToFile(generation, "Data", DataContent)
+	WriteToFile(generation, "Index", IndexContent)
+	WriteToFile(generation, "Summary", SummaryContent)
+	WriteToFile(generation, "Bloom", FilterContent)
+	WriteToFile(generation, "Merkle", MerkleContent)
 }
 
-// STEPS- kreiraj bloom, ucitaj logs u bloom, merkle, onda za svaki tip-sacuvaj write
-func WriteToMultipleFiles(logs []*Log, generation int, FILENAME string) error {
-	// Build Bloom Filter
+func WriteSummaryLog(SummaryContent *bytes.Buffer, KeySize, Key, OffsetInIndexFile any) {
+	binary.Write(SummaryContent, binary.LittleEndian, KeySize)           //upisi velicinu kljuca
+	binary.Write(SummaryContent, binary.LittleEndian, Key)               //kljuc
+	binary.Write(SummaryContent, binary.LittleEndian, OffsetInIndexFile) //trenutna duzina index bufera(kako 10. kljuc jos nije upisan ovo ce biti pocetak 10. kljuca)
 
-	filter := BuildFilter(logs, len(logs), 0.1)
-
-	// Build Index
-	indexes := BuildIndex(logs, 0)
-	indexData := indexes.Entries
-
-	// Build Summary
-	summary := BuildSummary(indexData)
-
-	// Serialize the logs to bytes
-	var serializedLogs []byte
-	for _, log := range logs {
-		serializedLogs = append(serializedLogs, log.Serialize()...)
-	}
-
-	// Write data to SSTable file
-	sstableFile, err := os.OpenFile(fmt.Sprintf("%s-%d-Data.db", FILENAME, generation), os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	defer sstableFile.Close()
-
-	_, err = sstableFile.Write(serializedLogs)
-	if err != nil {
-		return err
-	}
-
-	// Write indexes to Index file
-	indexFile, err := os.OpenFile(fmt.Sprintf("%s-%d-Index.db", FILENAME, generation), os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	defer indexFile.Close()
-
-	_, err = indexFile.Write(indexes.SerializeIndexes())
-	if err != nil {
-		return err
-	}
-
-	// Write summary to Summary file
-	summaryFile, err := os.OpenFile(fmt.Sprintf("%s-%d-Summary.db", FILENAME, generation), os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	defer summaryFile.Close()
-
-	_, err = summaryFile.Write(summary.Serialize())
-	if err != nil {
-		return err
-	}
-
-	// Write filter to Bloom Filter file
-	filterFile, err := os.OpenFile(fmt.Sprintf("%s-%d-Filter.db", FILENAME, generation), os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	defer filterFile.Close()
-
-	_, err = filterFile.Write(filter.Serialize())
-	if err != nil {
-		return err
-	}
-
-	return nil
+}
+func WriteSummaryHeader(sortedData []Log, SummaryContent *bytes.Buffer) {
+	binary.Write(SummaryContent, binary.LittleEndian, sortedData[0].KeySize) //min key
+	binary.Write(SummaryContent, binary.LittleEndian, sortedData[0].Key)
+	binary.Write(SummaryContent, binary.LittleEndian, sortedData[len(sortedData)-1].KeySize) //max key
+	binary.Write(SummaryContent, binary.LittleEndian, sortedData[len(sortedData)-1].Key)
 }
 
-//func ReadSingleFile(file *os.File) (*Log, error) {
-//
-//}
+func WriteIndexLog(IndexContent *bytes.Buffer, KeySize, Key, OffSetInDataFile any) {
+	binary.Write(IndexContent, binary.LittleEndian, KeySize)          //ispisi duzinu kljuca(ovo je uvek readable jer je uint64)
+	binary.Write(IndexContent, binary.LittleEndian, Key)              //ispisi kljuc
+	binary.Write(IndexContent, binary.LittleEndian, OffSetInDataFile) //ispisi offset bloka u Data fajlu
+}
+
+func WriteToFile(generation int, fileType string, bufferToWrite *bytes.Buffer) {
+	err := ioutil.WriteFile(fileType+"-Gen-"+strconv.Itoa(generation), bufferToWrite.Bytes(), 0644)
+	if err != nil {
+		fmt.Println("Err u pisanju fajla "+fileType, err)
+		return
+	}
+}
 
 // ReadFromMultipleFiles - TODO:Algoritam otprilike-proveri da li se trazeni kljuc nalazi u BloomFilter-u, ako se ne nalazi- predji na sledeci SSTable, ako si nasao-otvori Summary za dati SSTable nadji asocirani Log, iscitaj entrije kako bi nasli odgovarajuci, kada se sve odradi-iscitaj SSTable
-func ReadFromMultipleFiles() {}
-
+// SINGLE FILE
 func ReadHeader(file *os.File) (*Header, error) {
 	var headerBytes = make([]byte, 32)
 	_, err := file.Read(headerBytes)
@@ -231,11 +189,9 @@ func WriteToSingleFile(logs []*Log, FILENAME string) error {
 
 // delete, deleteMultiple, readRecords---> implementiraj?
 
-/* func buildFilter():
-funkcija uzima ocekivane elemente, br. ocek. el. i rate, dodaje el. u bloom i kreira bloom filter*/
-
-func BuildFilter(logs []*Log, expectedElements int, falsePositiveRate float64) *Bloom2 {
-	bloom := &Bloom2{}
+// funkcija uzima ocekivane elemente, br. ocek. el. i rate, dodaje el. u bloom i kreira bloom filter*/
+func BuildFilter(logs []Log, expectedElements int, falsePositiveRate float64) *Bloom2 {
+	bloom := Bloom2{}
 	bloom.InitializeBloom2(expectedElements, falsePositiveRate)
 
 	// Add each Key to the Bloom Filter
@@ -243,17 +199,17 @@ func BuildFilter(logs []*Log, expectedElements int, falsePositiveRate float64) *
 		bloom.Add(log.Key)
 	}
 
-	return bloom
+	return &bloom
 }
 
 // bottom-up izgradnja, pretpostavka da imamo key:value parove!!!!!!!!
 
-func BuildMerkleTreeRoot(sortedData []Data) *Node {
+func BuildMerkleTreeRoot(sortedData []Log) *Node {
 	// Create leaf nodes for each data entry and hash them individually.
 	var leafNodes []*Node
 	for _, data := range sortedData {
 		node := &Node{
-			Data: []byte(data.Key + data.Value), // Concatenate Key and Value for simplicity
+			Data: append(data.Key, data.Value...), // Concatenate Key and Value for simplicity
 		}
 		leafNodes = append(leafNodes, node)
 	}
@@ -283,7 +239,7 @@ func BuildMerkleTreeRoot(sortedData []Data) *Node {
 	return leafNodes[0]
 }
 
-///////////////////// META DATA
+///////////////////// META DATA	===> NE BRISI OVO DOLE!!!!!
 
 /*func buildMetaData():
 otprilike ideja- sortiraj-sortData(), kreiraj TOC, kreiraj MerkleTree-buildMerkleTreeRoot-vraca hash root-a,
@@ -367,49 +323,26 @@ func BuildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName
 	return metadata, nil
 }
 */
-/////////////////// SORT DATA
 
-/*
-	func sortData():
-
-otprilike ideja-memtable ti je input,
-Data struct sadrzi podatke memTable-a,
-vraca Key-Value vrednosti sortirane po kljucu spremne za upis
-*/
-type Data struct {
-	Key   string
-	Value string
-	Index int64
-}
-
-func SortData1(entries []Data) []Data {
-	// Sort the entries by Key
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Key < entries[j].Key
-	})
-
-	return entries
-}
-
-func SortData(memtable map[string]Data) []Data {
-	// Create a slice to hold the data from the memtable
-	dataSlice := make([]Data, 0, len(memtable))
-
-	// Convert the map to a slice of Data entries
-	for _, data := range memtable {
-		dataSlice = append(dataSlice, data)
-	}
-
-	// Sort the Data slice by Key in ascending order
-	sort.Slice(dataSlice, func(i, j int) bool {
-		return dataSlice[i].Key < dataSlice[j].Key
-	})
-
-	// Assign incremental Index values to the sorted entries
-	for i, entry := range dataSlice {
-		entry.Index = int64(i)
-		dataSlice[i] = entry
-	}
-
-	return dataSlice
-}
+//func SortData(memtable map[string]Data) []Data {
+//	// Create a slice to hold the data from the memtable
+//	dataSlice := make([]Data, 0, len(memtable))
+//
+//	// Convert the map to a slice of Data entries
+//	for _, data := range memtable {
+//		dataSlice = append(dataSlice, data)
+//	}
+//
+//	// Sort the Data slice by Key in ascending order
+//	sort.Slice(dataSlice, func(i, j int) bool {
+//		return dataSlice[i].Key < dataSlice[j].Key
+//	})
+//
+//	// Assign incremental Index values to the sorted entries
+//	for i, entry := range dataSlice {
+//		entry.Index = int64(i)
+//		dataSlice[i] = entry
+//	}
+//
+//	return dataSlice
+//}

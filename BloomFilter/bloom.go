@@ -58,7 +58,7 @@ func (bloom *Bloom2) Add(data []byte) {
 }
 
 // Serialize serializes the Bloom2 filter to a byte slice.
-func (bloom *Bloom2) Serialize() []byte {
+func (bloom *Bloom2) Serialize() *bytes.Buffer {
 	var serializedBloom = new(bytes.Buffer)
 
 	// Serialize the filter parameters
@@ -75,7 +75,7 @@ func (bloom *Bloom2) Serialize() []byte {
 		serializedBloom.Write(serializedHashFunc)
 	}
 
-	return serializedBloom.Bytes()
+	return serializedBloom
 }
 
 // procitaj Bloom filter iz fajla

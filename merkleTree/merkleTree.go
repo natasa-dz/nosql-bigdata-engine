@@ -74,7 +74,7 @@ func buildMerkleTree(data [][]byte) *Node {
 	return nodes[0]
 }
 
-func serializeMerkleTree(root *Node) []byte {
+func SerializeMerkleTree(root *Node) []byte {
 
 	if root == nil {
 		return nil
@@ -84,8 +84,8 @@ func serializeMerkleTree(root *Node) []byte {
 		return root.Data
 	}
 
-	leftBytes := serializeMerkleTree(root.Left)
-	rightBytes := serializeMerkleTree(root.Right)
+	leftBytes := SerializeMerkleTree(root.Left)
+	rightBytes := SerializeMerkleTree(root.Right)
 
 	return append(root.Data, append(leftBytes, rightBytes...)...)
 }
@@ -106,7 +106,7 @@ func main() {
 	fmt.Printf("Merkle Root: %x\n", root.Data)
 
 	// Serialize the Merkle tree.
-	serializedTree := serializeMerkleTree(root)
+	serializedTree := SerializeMerkleTree(root)
 
 	// Save the serialized Merkle tree to a file.
 	err := ioutil.WriteFile("merkle_tree.dat", serializedTree, 0644)

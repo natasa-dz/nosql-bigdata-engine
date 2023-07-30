@@ -1,7 +1,8 @@
 package MemTable
 
 import (
-	"NAiSP/Log"
+	. "NAiSP/Log"
+	"sort"
 )
 
 //trashold - granica/prag zapisa (< 100%)
@@ -29,95 +30,12 @@ func GenerateMemtable(kapacitetStrukture uint, pragZaFlush float64, imeStrukture
 	//size ce ici na 0 (ako planiramo da ih rotiramo, lakse ih je obrisati i uzeti sledeci iz liste)
 	//treba da iz strukture uzmes i sortiras kljuceve
 	//tako sortirane treba da uzmes i ubacis ih u SSTable
-	//kad provalim kako SSTable radi mozda se izmeni ovaj algoritam, ali svakako otprilike je ovako
-	//mozda nije lose imati neku strukturu koja ce biti prelazna izmedju svih memtablestruktura (btree i skiplist) i SSTable struktova
+	//zatim treba da ga obrises
+	//NAPOMENA: U VECOJ APSTRAKCIJI (WRITE PATH) TREBA DA IMAMO LISTU PRAZNIH MEMTABLOVA I KAKO SE JEDAN POPUNI TAKO SE TAJ FLUSHUJE I BRISE,
+		//SLEDECI KRECE DA SE PUNI I TAKODJE SE PRAVI I JEDAN PRAZAN DA NE BI LISTA OSTALA BEZ MEMTABLOVA U JEDNOM MOMENTU
 }*/
 
-//  TREBA IMPLEMENTIRATI
-
-/*
-	func (table *Memtable) GetElements() []Data {
-		var elements []Data
-
-		// Traverse the BTree and collect non-tombstone elements
-		table.tableStruct.Traverse(func(node *BTreeNode) {
-			for _, data := range node.Data {
-				if !data.Tombstone {
-					elements = append(elements, data)
-				}
-			}
-		})
-
-		return elements
-	}
-*/
-/*func (table *Memtable) Flush() error {
-
-elements := table.GetElements()
-if len(elements) == 0 {
-	// Nothing to flush
-	return nil
-}
-
-generation := 0 // You might need a way to manage generation numbers
-
-// Create a BloomFilter for the SSTable
-bloomFilter := BuildFilter(elements, len(elements), 0.01) // Example: false positive rate of 1%
-
-/*	// Create the SSTable Index
-	sstableIndex := BuildIndex(elements)
-	// Build the Merkle Tree from the sorted data
-	merkleRoot := BuildMerkleTreeRoot(elements)
-*/
-/*	dataMap := make(map[string]Data)
-	for _, data := range elements {
-		dataMap[data.Key] = data
-	}
-
-	// Create the Metadata for the SSTable
-	metadata, err := BuildMetaData(dataMap, bloomFilter, fmt.Sprintf("usertable-%d-SSTable.txt", generation), generation)
-	if err != nil {
-		return err
-	}*/
-
-/*	// Save the SSTable components to disk
-	err = SaveDataToDisk(elements, generation)
-	if err != nil {
-		return err
-	}
-
-	err = SaveIndexToDisk(sstableIndex, generation)
-	if err != nil {
-		return err
-	}
-
-	err = SaveSummaryToDisk(metadata.DataSummary, generation)
-	if err != nil {
-		return err
-	}
-
-	err = SaveBloomFilterToDisk(metadata.BloomFilter, generation)
-	if err != nil {
-		return err
-	}
-
-	err = SaveTOCToDisk(metadata.TOC, generation)
-	if err != nil {
-		return err
-	}
-
-	err = SaveMetadataToDisk(metadata, generation)
-	if err != nil {
-		return err
-	}
-*/
-// Clear the Memtable after successful flush
-/*	table.tableStruct = CreateTree()
-
-	return nil
-}*/
-
-func (table *Memtable) Insert(data Log.Log) {
+func (table *Memtable) Insert(data Log) {
 	//if:
 	//proveri da li postoji, ako postoji samo updatuj podatak i returnuj
 	//else:
@@ -139,7 +57,7 @@ func (table *Memtable) Insert(data Log.Log) {
 }
 
 // ///////////////////////////////////// PRIMER KAKO BI MOGAO OTRPILIKE IZGLEDATI FLUSH
-
+//OSTAVIO SEBI DA POGLEDAM -- DUSAN(JA CU I OBRISATI)!!
 /*
 	func (table *Memtable) FlushTry() {
 		elements := table.GetElements()
@@ -157,51 +75,10 @@ func (table *Memtable) Insert(data Log.Log) {
 	}
 */
 
-// Now, when you create the SSTable, you can use these functions to save each element to disk with the correct naming format.
-/*func CreateSSTable(memtable map[string]Data, generation int) error {
-	// Sort the data from the memtable
-	sortedData := SortData(memtable)
-
-	// Build the Bloom Filter
-	bloomFilter := BuildFilter(sortedData, expectedElements, falsePositiveRate)
-
-	// Build the Index
-	index := BuildIndex(sortedData)
-
-	// Build the Summary
-	summary := BuildSummary(sortedData, generation)
-
-	// Build the Merkle Tree root
-	merkleRoot := BuildMerkleTreeRoot(sortedData)
-
-	// Create the Metadata
-	metadata := &Metadata{
-		Version:      "1.0",
-		DataSummary:  summary,
-		BloomFilter:  bloomFilter,
-		SSTableIndex: index,
-		TOC:          nil, // Implement TOC generation if needed
-		MerkleRoot:   merkleRoot,
-	}
-
-	// Save each element to disk with the appropriate naming format
-	if err := SaveDataToDisk(sortedData, generation); err != nil {
-		return err
-	}
-
-	if err := SaveIndexToDisk(index, generation); err != nil {
-		return err
-	}
-
-	if err := SaveSummaryToDisk(summary, generation); err != nil {
-		return err
-	}
-
-	if err := SaveBloomFilterToDisk(bloomFilter, generation); err != nil {
-		return err
-	}
-
-	// Save other elements (TOC, Metadata) if needed
-
-	return nil
-}*/
+func SortData(entries []Log) []Log { //ISKORISTICU KASNIJE!!!
+	// Sort the entries by Key
+	sort.Slice(entries, func(i, j int) bool {
+		return string(entries[i].Key) < string(entries[j].Key)
+	})
+	return entries
+}
