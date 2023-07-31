@@ -151,6 +151,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.Key = keyBytes
+	fmt.Println(string(log.Key))
 
 	// Read Value
 	var valueBytes = make([]byte, log.ValueSize)

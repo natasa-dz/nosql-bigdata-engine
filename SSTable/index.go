@@ -5,10 +5,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"sort"
+	"os"
 )
-
-///////////////////////// INDEX
 
 // pojedinacni index
 type IndexEntry struct {
@@ -22,36 +20,26 @@ type Index struct {
 	Entries []IndexEntry
 }
 
-func BuildIndex(logs []*Log, initialOffset uint64) *Index {
-	// Sort the logs by Key
-	sort.Slice(logs, func(i, j int) bool {
-		return string(logs[i].Key) < string(logs[j].Key)
-	})
-
+func BuildIndex(logs []*Log, initialOffset uint64) []*IndexEntry {
 	// Create the Index entries
-	indexEntries := make([]IndexEntry, len(logs))
+	indexEntries := make([]*IndexEntry, len(logs))
 	var offset = initialOffset
 
 	for i, log := range logs {
 		encodedKey := hex.EncodeToString([]byte(log.Key))
 		keySize := uint64(len(encodedKey))
 
-		indexEntries[i] = IndexEntry{
+		indexEntries[i] = &IndexEntry{
 			KeySize: keySize,
 			Key:     encodedKey,
 			Offset:  offset,
 		}
 
 		// Calculate the offset for the next entry
-		offset += 8 + keySize + 8 // 8 bytes for each uint64 field
+		offset += uint64(len(log.Serialize()))
 	}
 
-	// Create the Index object
-	index := &Index{
-		Entries: indexEntries,
-	}
-
-	return index
+	return indexEntries
 }
 
 // Serialize an IndexEntry to bytes
@@ -73,12 +61,42 @@ func DeserializeIndexEntry(serializedIndex []byte) IndexEntry {
 	}
 }
 
+func ReadIndexEntry(file *os.File) (*IndexEntry, error) {
+	var indexEntry IndexEntry
+
+	// Read keysize
+	var keySizeBytes = make([]byte, KEY_SIZE_SIZE)
+	_, err := file.Read(keySizeBytes)
+	if err != nil {
+		return nil, err
+	}
+	indexEntry.KeySize = uint64(binary.LittleEndian.Uint64(keySizeBytes))
+
+	// Read Key
+	var keyBytes = make([]byte, indexEntry.KeySize)
+	_, err = file.Read(keyBytes)
+	if err != nil {
+		return nil, err
+	}
+	indexEntry.Key = string(keyBytes)
+
+	// Read offset
+	var offsetBytes = make([]byte, KEY_SIZE_SIZE)
+	_, err = file.Read(keySizeBytes)
+	if err != nil {
+		return nil, err
+	}
+	indexEntry.Offset = uint64(binary.LittleEndian.Uint64(offsetBytes))
+
+	return &indexEntry, nil
+}
+
 // Serialize an Index to bytes
-func (index Index) SerializeIndexes() []byte {
+func SerializeIndexes(Entries []*IndexEntry) []byte {
 
 	var serializedIndexes = new(bytes.Buffer)
 
-	for _, entry := range index.Entries {
+	for _, entry := range Entries {
 		binary.Write(serializedIndexes, binary.LittleEndian, entry.KeySize)
 		binary.Write(serializedIndexes, binary.LittleEndian, []byte(entry.Key))
 		binary.Write(serializedIndexes, binary.LittleEndian, entry.Offset)

@@ -30,7 +30,7 @@ func Hash(data []byte) []byte {
 }
 
 // bottom-up izgradnja, pretpostavka da imamo key:value parove!!!!!!!!
-func BuildMerkleTreeRoot(sortedData []Log) *Node {
+func BuildMerkleTreeRoot(sortedData []*Log) *Node {
 	// Create leaf nodes for each data entry and hash them individually.
 	var leafNodes []*Node
 	for _, data := range sortedData {

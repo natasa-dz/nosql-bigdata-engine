@@ -81,6 +81,7 @@ func (bloom *Bloom2) Serialize() *bytes.Buffer {
 
 // procitaj Bloom filter iz fajla
 func ReadBloom(file *os.File, offset int64) *Bloom2 {
+
 	var bloom = new(Bloom2)
 	file.Seek(offset, io.SeekStart)
 
@@ -127,7 +128,7 @@ func ReadBloom(file *os.File, offset int64) *Bloom2 {
 }
 
 // funkcija uzima ocekivane elemente, br. ocek. el. i rate, dodaje el. u bloom i kreira bloom filter*/
-func BuildFilter(logs []Log, expectedElements int, falsePositiveRate float64) *Bloom2 {
+func BuildFilter(logs []*Log, expectedElements int, falsePositiveRate float64) *Bloom2 {
 	bloom := Bloom2{}
 	bloom.InitializeEmptyBloom2(expectedElements, falsePositiveRate)
 
@@ -135,6 +136,5 @@ func BuildFilter(logs []Log, expectedElements int, falsePositiveRate float64) *B
 	for _, log := range logs {
 		bloom.Add(log.Key)
 	}
-
 	return &bloom
 }

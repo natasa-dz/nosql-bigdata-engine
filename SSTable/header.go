@@ -3,24 +3,24 @@ package SSTable
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
+	"os"
 )
 
 type Header struct {
-	logsOffset    uint64
-	bloomOffset   uint64
-	summaryOffset uint64
-	indexOffset   uint64
+	LogsOffset    uint64
+	BloomOffset   uint64
+	SummaryOffset uint64
+	IndexOffset   uint64
 }
 
 func (header Header) HeaderSerialize() []byte {
-	// Create a buffer to store the serialized data
 	serialized := new(bytes.Buffer)
 
-	// Write the StartKeySize and EndKeySize to the buffer
-	binary.Write(serialized, binary.LittleEndian, header.logsOffset)
-	binary.Write(serialized, binary.LittleEndian, header.bloomOffset)
-	binary.Write(serialized, binary.LittleEndian, header.summaryOffset)
-	binary.Write(serialized, binary.LittleEndian, header.indexOffset)
+	binary.Write(serialized, binary.LittleEndian, header.LogsOffset)
+	binary.Write(serialized, binary.LittleEndian, header.BloomOffset)
+	binary.Write(serialized, binary.LittleEndian, header.SummaryOffset)
+	binary.Write(serialized, binary.LittleEndian, header.IndexOffset)
 
 	return serialized.Bytes()
 }
@@ -33,9 +33,19 @@ func DeserializeHeader(serializedHeader []byte) Header {
 	var index = binary.LittleEndian.Uint64(serializedHeader[24:])
 
 	return Header{
-		logsOffset:    logs,
-		bloomOffset:   bloom,
-		summaryOffset: summary,
-		indexOffset:   index,
+		LogsOffset:    logs,
+		BloomOffset:   bloom,
+		SummaryOffset: summary,
+		IndexOffset:   index,
 	}
+}
+func ReadHeader(file *os.File) (*Header, error) {
+	file.Seek(0, io.SeekStart)
+	var headerBytes = make([]byte, 32)
+	_, err := file.Read(headerBytes)
+	if err != nil {
+		return nil, err
+	}
+	header := DeserializeHeader(headerBytes)
+	return &header, nil
 }

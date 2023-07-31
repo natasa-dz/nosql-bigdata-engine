@@ -10,7 +10,12 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strconv"
+)
+
+const (
+	SUMMARY_BLOCK_SIZE = 10
 )
 
 type SSTable struct {
@@ -25,7 +30,7 @@ type SSTable struct {
 }
 
 // MULTIPLE:
-func BuildSSTableMultiple(sortedData []Log, generation int) {
+func BuildSSTableMultiple(sortedData []*Log, generation int) {
 	//cetri bafera za cetri razlicita fajla
 	var FilterContent = new(bytes.Buffer)
 	var DataContent = new(bytes.Buffer)
@@ -46,7 +51,7 @@ func BuildSSTableMultiple(sortedData []Log, generation int) {
 		if i == 0 {
 			WriteSummaryLog(SummaryContent, sortedData[i].KeySize, sortedData[i].Key, 0) //ubaci prvi u baffer i offset u indexu ce biti 0
 		}
-		if ((i+1)%10) == 0 && i != 0 { //svaki 10. kljuc - summary napravljen u fazonu da ima jos indexa ne samo prvi i poslednji
+		if ((i+1)%SUMMARY_BLOCK_SIZE) == 0 && i != 0 { //svaki 10. kljuc - summary napravljen u fazonu da ima jos indexa ne samo prvi i poslednji
 			WriteSummaryLog(SummaryContent, sortedData[i-1].KeySize, sortedData[i-1].Key, IndexContent.Len())
 			//kako indexEntry i dalje nije zapisan pocetak njega je trenutna duzina indexcontent buffera, dakle ubacujemo ga u summary
 		}
@@ -67,7 +72,7 @@ func WriteSummaryLog(SummaryContent *bytes.Buffer, KeySize, Key, OffsetInIndexFi
 	binary.Write(SummaryContent, binary.LittleEndian, OffsetInIndexFile) //trenutna duzina index bufera(kako 10. kljuc jos nije upisan ovo ce biti pocetak 10. kljuca)
 
 }
-func WriteSummaryHeader(sortedData []Log, SummaryContent *bytes.Buffer) {
+func WriteSummaryHeader(sortedData []*Log, SummaryContent *bytes.Buffer) {
 	binary.Write(SummaryContent, binary.LittleEndian, sortedData[0].KeySize) //min key
 	binary.Write(SummaryContent, binary.LittleEndian, sortedData[0].Key)
 	binary.Write(SummaryContent, binary.LittleEndian, sortedData[len(sortedData)-1].KeySize) //max key
@@ -90,15 +95,6 @@ func WriteToFile(generation int, fileType string, bufferToWrite *bytes.Buffer) {
 
 // ReadFromMultipleFiles - TODO:Algoritam otprilike-proveri da li se trazeni kljuc nalazi u BloomFilter-u, ako se ne nalazi- predji na sledeci SSTable, ako si nasao-otvori Summary za dati SSTable nadji asocirani Log, iscitaj entrije kako bi nasli odgovarajuci, kada se sve odradi-iscitaj SSTable
 // SINGLE FILE
-func ReadHeader(file *os.File) (*Header, error) {
-	var headerBytes = make([]byte, 32)
-	_, err := file.Read(headerBytes)
-	if err != nil {
-		return nil, err
-	}
-	header := DeserializeHeader(headerBytes)
-	return &header, nil
-}
 
 func ReadLogs(file *os.File) ([]*Log, error) {
 	header, err := ReadHeader(file)
@@ -110,7 +106,7 @@ func ReadLogs(file *os.File) ([]*Log, error) {
 	var offset int64
 	offset = 0
 	//read until the end of logs
-	for uint64(offset) < header.bloomOffset {
+	for uint64(offset) < header.BloomOffset {
 		loaded, _ = ReadLog(file)
 		offset, _ = file.Seek(0, io.SeekCurrent)
 		data = append(data, loaded)
@@ -118,34 +114,39 @@ func ReadLogs(file *os.File) ([]*Log, error) {
 	return data, nil
 }
 
+func SortData(logs []*Log) {
+	sort.Slice(logs, func(i, j int) bool {
+		return string(logs[i].Key) < string(logs[j].Key)
+	})
+}
+
 func WriteToSingleFile(logs []*Log, FILENAME string) error {
-	//Build header
+	SortData(logs)
 	header := Header{
-		logsOffset:    32,
-		bloomOffset:   0,
-		summaryOffset: 0,
-		indexOffset:   0}
+		LogsOffset:    32,
+		BloomOffset:   0,
+		SummaryOffset: 0,
+		IndexOffset:   0}
 
 	// Serialize the logs to bytes
 	var serializedLogs []byte
 	for _, log := range logs {
 		serializedLogs = append(serializedLogs, log.Serialize()...)
 	}
-	header.bloomOffset = header.logsOffset + uint64(len(serializedLogs))
+	header.BloomOffset += header.LogsOffset + uint64(len(serializedLogs))
 
 	// Build Bloom Filter
 	filter := BuildFilter(logs, len(logs), 0.1)
 	filterSerialized := filter.Serialize()
-	header.summaryOffset = header.bloomOffset + uint64(len(filterSerialized))
-
+	header.SummaryOffset += header.BloomOffset + uint64(filterSerialized.Len())
+	fmt.Println("summaryy", header.SummaryOffset)
 	// Build Index
-	indexes := BuildIndex(logs, 0)
-	indexData := indexes.Entries
+	indexData := BuildIndex(logs, header.LogsOffset)
 
 	// Build Summary
-	summary := BuildSummary(indexData)
-	summarySerialized := summary.Serialize()
-	header.indexOffset = header.summaryOffset + uint64(len(summarySerialized))
+	summary := BuildSummary(indexData, header.IndexOffset)
+	summarySerialized := summary.Bytes()
+	header.IndexOffset += header.SummaryOffset + uint64(len(summarySerialized))
 
 	// Open the SSTable file
 	sstableFile, err := os.OpenFile(fmt.Sprintf("%s.db", FILENAME), os.O_WRONLY|os.O_CREATE, 0666)
@@ -168,7 +169,7 @@ func WriteToSingleFile(logs []*Log, FILENAME string) error {
 	}
 
 	// Write the Bloom Filter to the file
-	_, err = sstableFile.Write(filterSerialized)
+	_, err = sstableFile.Write(filterSerialized.Bytes())
 	if err != nil {
 		return err
 	}
@@ -180,7 +181,7 @@ func WriteToSingleFile(logs []*Log, FILENAME string) error {
 	}
 
 	// Write the Indexes to the file
-	_, err = sstableFile.Write(indexes.SerializeIndexes())
+	_, err = sstableFile.Write(SerializeIndexes(indexData))
 	if err != nil {
 		return err
 	}
