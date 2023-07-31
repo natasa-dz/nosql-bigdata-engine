@@ -4,7 +4,8 @@ import (
 	. "NAiSP/Log"
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
+	"fmt"
+	"io"
 	"os"
 )
 
@@ -26,15 +27,12 @@ func BuildIndex(logs []*Log, initialOffset uint64) []*IndexEntry {
 	var offset = initialOffset
 
 	for i, log := range logs {
-		encodedKey := hex.EncodeToString([]byte(log.Key))
-		keySize := uint64(len(encodedKey))
 
 		indexEntries[i] = &IndexEntry{
-			KeySize: keySize,
-			Key:     encodedKey,
+			KeySize: uint64(log.KeySize),
+			Key:     string(log.Key),
 			Offset:  offset,
 		}
-
 		// Calculate the offset for the next entry
 		offset += uint64(len(log.Serialize()))
 	}
@@ -61,9 +59,10 @@ func DeserializeIndexEntry(serializedIndex []byte) IndexEntry {
 	}
 }
 
-func ReadIndexEntry(file *os.File) (*IndexEntry, error) {
+func ReadIndexEntry(file *os.File, offset int64) (*IndexEntry, error) {
 	var indexEntry IndexEntry
-
+	file.Seek(offset, io.SeekStart)
+	fmt.Println("staaart")
 	// Read keysize
 	var keySizeBytes = make([]byte, KEY_SIZE_SIZE)
 	_, err := file.Read(keySizeBytes)
@@ -71,7 +70,7 @@ func ReadIndexEntry(file *os.File) (*IndexEntry, error) {
 		return nil, err
 	}
 	indexEntry.KeySize = uint64(binary.LittleEndian.Uint64(keySizeBytes))
-
+	fmt.Println("KeySize", indexEntry.KeySize)
 	// Read Key
 	var keyBytes = make([]byte, indexEntry.KeySize)
 	_, err = file.Read(keyBytes)
@@ -79,7 +78,7 @@ func ReadIndexEntry(file *os.File) (*IndexEntry, error) {
 		return nil, err
 	}
 	indexEntry.Key = string(keyBytes)
-
+	fmt.Println("Key", indexEntry.Key)
 	// Read offset
 	var offsetBytes = make([]byte, KEY_SIZE_SIZE)
 	_, err = file.Read(keySizeBytes)
@@ -87,7 +86,7 @@ func ReadIndexEntry(file *os.File) (*IndexEntry, error) {
 		return nil, err
 	}
 	indexEntry.Offset = uint64(binary.LittleEndian.Uint64(offsetBytes))
-
+	fmt.Println("offset", indexEntry.Offset)
 	return &indexEntry, nil
 }
 

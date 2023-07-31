@@ -125,8 +125,8 @@ func WriteToSingleFile(logs []*Log, FILENAME string) error {
 	header := Header{
 		LogsOffset:    32,
 		BloomOffset:   0,
-		SummaryOffset: 0,
-		IndexOffset:   0}
+		IndexOffset:   0,
+		SummaryOffset: 0}
 
 	// Serialize the logs to bytes
 	var serializedLogs []byte
@@ -138,16 +138,18 @@ func WriteToSingleFile(logs []*Log, FILENAME string) error {
 	// Build Bloom Filter
 	filter := BuildFilter(logs, len(logs), 0.1)
 	filterSerialized := filter.Serialize()
-	header.SummaryOffset += header.BloomOffset + uint64(filterSerialized.Len())
-	fmt.Println("summaryy", header.SummaryOffset)
+	header.IndexOffset += header.BloomOffset + uint64(filterSerialized.Len())
+
 	// Build Index
 	indexData := BuildIndex(logs, header.LogsOffset)
+	serializedIndex := SerializeIndexes(indexData)
 
 	// Build Summary
 	summary := BuildSummary(indexData, header.IndexOffset)
 	summarySerialized := summary.Bytes()
-	header.IndexOffset += header.SummaryOffset + uint64(len(summarySerialized))
-
+	header.SummaryOffset += header.IndexOffset + uint64(len(serializedIndex))
+	fmt.Println("start", header.SummaryOffset)
+	fmt.Println("velicina", len(summarySerialized))
 	// Open the SSTable file
 	sstableFile, err := os.OpenFile(fmt.Sprintf("%s.db", FILENAME), os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
@@ -167,21 +169,20 @@ func WriteToSingleFile(logs []*Log, FILENAME string) error {
 	if err != nil {
 		return err
 	}
-
 	// Write the Bloom Filter to the file
 	_, err = sstableFile.Write(filterSerialized.Bytes())
 	if err != nil {
 		return err
 	}
 
-	// Write the Summary to the file
-	_, err = sstableFile.Write(summarySerialized)
+	// Write the Indexes to the file
+	_, err = sstableFile.Write(serializedIndex)
 	if err != nil {
 		return err
 	}
 
-	// Write the Indexes to the file
-	_, err = sstableFile.Write(SerializeIndexes(indexData))
+	// Write the Summary to the file
+	_, err = sstableFile.Write(summarySerialized)
 	if err != nil {
 		return err
 	}

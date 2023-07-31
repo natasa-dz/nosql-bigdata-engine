@@ -19,21 +19,23 @@ type Summary struct {
 func BuildSummary(data []*IndexEntry, indexOffset uint64) *bytes.Buffer {
 	var SummaryContent = new(bytes.Buffer)
 	var offset = indexOffset
+	fmt.Println("OFFSET", offset)
 	WriteSummaryHeaderSingle(data, SummaryContent) //u summary ce ispisati prvi i poslednji kljuc iz indexa
 	for i, entry := range data {
 		if ((i+1)%SUMMARY_BLOCK_SIZE) == 0 || i == 0 {
-			WriteSummaryLog(SummaryContent, data[i].KeySize, data[i].Key, offset)
+			fmt.Println("OFFSET", offset)
+			WriteSummaryLog(SummaryContent, data[i].KeySize, []byte(data[i].Key), offset)
 		}
 		offset += uint64(len(entry.SerializeIndexEntry()))
 	}
+
 	return SummaryContent
 }
 func WriteSummaryHeaderSingle(sortedData []*IndexEntry, SummaryContent *bytes.Buffer) {
-	fmt.Println("writeeerRR ", sortedData[len(sortedData)-1].Key)
 	binary.Write(SummaryContent, binary.LittleEndian, sortedData[0].KeySize) //min key
-	binary.Write(SummaryContent, binary.LittleEndian, sortedData[0].Key)
+	binary.Write(SummaryContent, binary.LittleEndian, []byte(sortedData[0].Key))
 	binary.Write(SummaryContent, binary.LittleEndian, sortedData[len(sortedData)-1].KeySize) //max key
-	binary.Write(SummaryContent, binary.LittleEndian, sortedData[len(sortedData)-1].Key)
+	binary.Write(SummaryContent, binary.LittleEndian, []byte(sortedData[len(sortedData)-1].Key))
 }
 
 // writes the summary header containing the boundaries of the SSTable (first and last keys).
@@ -124,21 +126,21 @@ func WriteSummaryHeaderSingle(sortedData []*IndexEntry, SummaryContent *bytes.Bu
 }*/
 
 // readSummaryHeader reads the summary header from the file and returns the Summary struct.
-func ReadSummary(file *os.File, offset int64, offsetEnd int64) (*Summary, error) {
+func ReadSummary(file *os.File, offset int64) (*Summary, error) {
 	//TODO: istestirati jos ujutru ne radi!!
+	offsetEnd, err := file.Seek(0, os.SEEK_END)
 	file.Seek(offset, io.SeekStart)
 	var startKeySize uint64
 	var endKeySize uint64
-	fmt.Println("staaart")
 
 	// Read the StartKeySize
 	var keySizeBytes = make([]byte, 8)
-	_, err := file.Read(keySizeBytes)
+	_, err = file.Read(keySizeBytes)
 	if err != nil {
 		return nil, err
 	}
 	startKeySize = uint64(binary.LittleEndian.Uint64(keySizeBytes))
-	fmt.Println(startKeySize)
+
 	// Read the StartKey
 	var startKeyBytes = make([]byte, startKeySize)
 	_, err = file.Read(startKeyBytes)
@@ -146,7 +148,6 @@ func ReadSummary(file *os.File, offset int64, offsetEnd int64) (*Summary, error)
 		return nil, err
 	}
 	startKey := string(startKeyBytes)
-	fmt.Println("key ", startKey)
 
 	// Read the EndKeySize
 	var endKeySizeBytes = make([]byte, 8)
@@ -155,6 +156,7 @@ func ReadSummary(file *os.File, offset int64, offsetEnd int64) (*Summary, error)
 		return nil, err
 	}
 	endKeySize = uint64(binary.LittleEndian.Uint64(endKeySizeBytes))
+
 	// Read the EndKey
 	var endKeyBytes = make([]byte, endKeySize)
 	_, err = file.Read(endKeyBytes)
@@ -164,16 +166,17 @@ func ReadSummary(file *os.File, offset int64, offsetEnd int64) (*Summary, error)
 	endKey := string(endKeyBytes)
 
 	offset, _ = file.Seek(0, io.SeekCurrent)
-	fmt.Println(offset)
 	var data []*IndexEntry
 	var loaded *IndexEntry
+
 	//read until the end of logs
 	for uint64(offset) < uint64(offsetEnd) {
-		loaded, _ = ReadIndexEntry(file)
+		loaded, _ = ReadIndexEntry(file, offset)
 		offset, _ = file.Seek(0, io.SeekCurrent)
 		data = append(data, loaded)
+		fmt.Println("offsetAFTER", offset)
 	}
-
+	fmt.Println("offsetend", offsetEnd)
 	// Create and return the Summary struct
 	summary := &Summary{
 		StartKeySize: startKeySize,

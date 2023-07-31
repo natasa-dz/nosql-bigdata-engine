@@ -10,8 +10,8 @@ import (
 type Header struct {
 	LogsOffset    uint64
 	BloomOffset   uint64
-	SummaryOffset uint64
 	IndexOffset   uint64
+	SummaryOffset uint64
 }
 
 func (header Header) HeaderSerialize() []byte {

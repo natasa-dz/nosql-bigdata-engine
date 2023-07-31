@@ -81,12 +81,21 @@ func main() {
 	fmt.Println(bloom.BitSlices)
 	fmt.Println(bloom.M)
 	fmt.Println(bloom.K)
-
-	/*summary, _ := ReadSummary(file, int64(header.SummaryOffset), int64(header.IndexOffset))
 	fmt.Println(int64(header.IndexOffset))
+	fmt.Println(int64(header.SummaryOffset))
+	summary, _ := ReadSummary(file, int64(header.SummaryOffset))
+
 	fmt.Println(summary.StartKey)
 	fmt.Println(summary.EndKey)
-	fmt.Println(summary.Entries[0].Key)*/
+	fmt.Println(summary.Entries[0].Key)
 	//TODO:istestirati index!!
 	defer file.Close()
+	file, err = os.OpenFile("singleTest.db", os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer file.Close()
+
+	fmt.Println("File content deleted.")
 }
