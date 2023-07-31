@@ -4,7 +4,6 @@ import (
 	. "NAiSP/Log"
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"os"
 )
@@ -62,7 +61,6 @@ func DeserializeIndexEntry(serializedIndex []byte) IndexEntry {
 func ReadIndexEntry(file *os.File, offset int64) (*IndexEntry, error) {
 	var indexEntry IndexEntry
 	file.Seek(offset, io.SeekStart)
-	fmt.Println("staaart")
 	// Read keysize
 	var keySizeBytes = make([]byte, KEY_SIZE_SIZE)
 	_, err := file.Read(keySizeBytes)
@@ -70,7 +68,7 @@ func ReadIndexEntry(file *os.File, offset int64) (*IndexEntry, error) {
 		return nil, err
 	}
 	indexEntry.KeySize = uint64(binary.LittleEndian.Uint64(keySizeBytes))
-	fmt.Println("KeySize", indexEntry.KeySize)
+
 	// Read Key
 	var keyBytes = make([]byte, indexEntry.KeySize)
 	_, err = file.Read(keyBytes)
@@ -78,16 +76,30 @@ func ReadIndexEntry(file *os.File, offset int64) (*IndexEntry, error) {
 		return nil, err
 	}
 	indexEntry.Key = string(keyBytes)
-	fmt.Println("Key", indexEntry.Key)
+
 	// Read offset
 	var offsetBytes = make([]byte, KEY_SIZE_SIZE)
-	_, err = file.Read(keySizeBytes)
+	_, err = file.Read(offsetBytes)
 	if err != nil {
 		return nil, err
 	}
 	indexEntry.Offset = uint64(binary.LittleEndian.Uint64(offsetBytes))
-	fmt.Println("offset", indexEntry.Offset)
 	return &indexEntry, nil
+}
+func ReadIndex(file *os.File, offset int64, offsetEnd int64) ([]*IndexEntry, error) {
+	file.Seek(offset, io.SeekStart)
+
+	offset, _ = file.Seek(0, io.SeekCurrent)
+	var data []*IndexEntry
+	var loaded *IndexEntry
+
+	//read until the end of logs
+	for uint64(offset) < uint64(offsetEnd) {
+		loaded, _ = ReadIndexEntry(file, offset)
+		offset, _ = file.Seek(0, io.SeekCurrent)
+		data = append(data, loaded)
+	}
+	return data, nil
 }
 
 // Serialize an Index to bytes

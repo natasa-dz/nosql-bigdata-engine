@@ -68,28 +68,38 @@ func main() {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	// Ensure the file is closed when the function returns
-
-	// Read binary data from the file into an integer slice
+	//Logs test
 	var data []*Log
-
 	data, _ = ReadLogs(file)
 	fmt.Println(data[0].Timestamp)
 	header, _ := ReadHeader(file)
-
+	//Bloom test
 	bloom := BloomFilter.ReadBloom(file, int64(header.BloomOffset))
 	fmt.Println(bloom.BitSlices)
 	fmt.Println(bloom.M)
 	fmt.Println(bloom.K)
 	fmt.Println(int64(header.IndexOffset))
 	fmt.Println(int64(header.SummaryOffset))
+
+	//Summary test
 	summary, _ := ReadSummary(file, int64(header.SummaryOffset))
 
 	fmt.Println(summary.StartKey)
 	fmt.Println(summary.EndKey)
-	fmt.Println(summary.Entries[0].Key)
-	//TODO:istestirati index!!
+	for i := 0; i < len(summary.Entries); i++ {
+		fmt.Println(string(summary.Entries[i].Key))
+		fmt.Println(summary.Entries[i].Offset)
+	}
+	//Index test
+	indexEntries, _ := ReadIndex(file, int64(header.IndexOffset), int64(header.SummaryOffset))
+
+	for i := 0; i < len(indexEntries); i++ {
+		fmt.Println(string(indexEntries[i].Key))
+		fmt.Println(indexEntries[i].Offset)
+	}
+
 	defer file.Close()
+	//Delete file
 	file, err = os.OpenFile("singleTest.db", os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		fmt.Println("Error:", err)

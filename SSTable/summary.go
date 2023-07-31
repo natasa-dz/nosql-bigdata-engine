@@ -127,7 +127,6 @@ func WriteSummaryHeaderSingle(sortedData []*IndexEntry, SummaryContent *bytes.Bu
 
 // readSummaryHeader reads the summary header from the file and returns the Summary struct.
 func ReadSummary(file *os.File, offset int64) (*Summary, error) {
-	//TODO: istestirati jos ujutru ne radi!!
 	offsetEnd, err := file.Seek(0, os.SEEK_END)
 	file.Seek(offset, io.SeekStart)
 	var startKeySize uint64
@@ -174,9 +173,7 @@ func ReadSummary(file *os.File, offset int64) (*Summary, error) {
 		loaded, _ = ReadIndexEntry(file, offset)
 		offset, _ = file.Seek(0, io.SeekCurrent)
 		data = append(data, loaded)
-		fmt.Println("offsetAFTER", offset)
 	}
-	fmt.Println("offsetend", offsetEnd)
 	// Create and return the Summary struct
 	summary := &Summary{
 		StartKeySize: startKeySize,
