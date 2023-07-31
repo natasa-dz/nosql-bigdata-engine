@@ -47,11 +47,7 @@ func BuildSSTableMultiple(sortedData []*Log, generation int) {
 	WriteSummaryHeader(sortedData, SummaryContent) //u summary ce ispisati prvi i poslednji kljuc iz indexa
 	for i, data := range sortedData {              //za svaki podatak
 		binary.Write(DataContent, binary.LittleEndian, data.Serialize()) //ubaci ga u baffer
-		//TODO: OVO TREBA UPROSTITI VIDETI STA CEMO SA TIME...
-		if i == 0 {
-			WriteSummaryLog(SummaryContent, sortedData[i].KeySize, sortedData[i].Key, 0) //ubaci prvi u baffer i offset u indexu ce biti 0
-		}
-		if ((i+1)%SUMMARY_BLOCK_SIZE) == 0 && i != 0 { //svaki 10. kljuc - summary napravljen u fazonu da ima jos indexa ne samo prvi i poslednji
+		if ((i+1)%10) == 0 || i == 0 {                                   //svaki 10. kljuc - summary napravljen u fazonu da ima jos indexa ne samo prvi i poslednji
 			WriteSummaryLog(SummaryContent, sortedData[i-1].KeySize, sortedData[i-1].Key, IndexContent.Len())
 			//kako indexEntry i dalje nije zapisan pocetak njega je trenutna duzina indexcontent buffera, dakle ubacujemo ga u summary
 		}

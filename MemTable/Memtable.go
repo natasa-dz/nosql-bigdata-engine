@@ -75,6 +75,17 @@ func (table *Memtable) Insert(data Log) {
 	}
 */
 
+func (table *Memtable) Flush(numOfFiles string) {
+	//TODO: Osmisliti sta ces sa generacijama gde ces ih cuvati(u onom write path delu kad budes pravio)
+	unsortedData := table.tableStruct.GetAllLogs()
+	sortedData := SortData(unsortedData)
+	if numOfFiles == "single" {
+		//TODO kreiraj SSTable pomocu single file
+	} else {
+		//TODO kreiraj SSTable pomocu multiple File
+	}
+}
+
 func SortData(entries []Log) []Log { //ISKORISTICU KASNIJE!!!
 	// Sort the entries by Key
 	sort.Slice(entries, func(i, j int) bool {
