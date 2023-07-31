@@ -37,8 +37,8 @@ func GenerateMemtable(kapacitetStrukture uint, pragZaFlush float64, imeStrukture
 
 func (table *Memtable) Flush(numOfFiles string) {
 	//TODO: Osmisliti sta ces sa generacijama gde ces ih cuvati(u onom write path delu kad budes pravio)
-	unsortedData := table.tableStruct.GetAllLogs()
-	sortedData := sortData(unsortedData)
+	//unsortedData := table.tableStruct.GetAllLogs()
+	//sortedData := sortData(unsortedData)
 	if numOfFiles == "single" {
 		//TODO kreiraj SSTable pomocu single file
 	} else {
@@ -46,7 +46,7 @@ func (table *Memtable) Flush(numOfFiles string) {
 	}
 }
 
-func sortData(entries []Log) []Log {
+func sortData(entries []*Log) []*Log {
 	sort.Slice(entries, func(i, j int) bool {
 		return string(entries[i].Key) < string(entries[j].Key)
 	})
@@ -74,10 +74,10 @@ func (table *Memtable) Delete(key string) bool {
 	return ans
 }
 
-func (table *Memtable) Search(key string) Log {
+func (table *Memtable) Search(key string) *Log {
 	indexInNode, nodeAdrress := table.tableStruct.Search(key)
 	if indexInNode != -1 {
-		return nodeAdrress.keys[indexInNode]
+		return &nodeAdrress.keys[indexInNode]
 	}
-	return nil //FIXME: zasto ovde baca gresku?
+	return &Log{} //NOTE: OVO JE JAKO BITNO DA SE PROVERAVA NAKON SEARCHA UZ POMOC MEMTABLA!!!!
 }

@@ -206,11 +206,11 @@ func (t *Tree) GetAllNodes() []*Node {
 	return allNodes
 }
 
-func (t *Tree) GetAllLogs() []Log.Log {
+func (t *Tree) GetAllLogs() []*Log.Log {
 	allNodes := t.GetAllNodes()
-	var allLogs []Log.Log
-	for _, node := range allNodes {
-		allLogs = append(allLogs, node.keys...)
+	var allLogs []*Log.Log
+	for i, node := range allNodes {
+		allLogs = append(allLogs, &node.keys[i])
 	}
 	return allLogs
 }
