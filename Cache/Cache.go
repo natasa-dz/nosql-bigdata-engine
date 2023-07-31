@@ -1,4 +1,4 @@
-package main
+package Cache
 
 //struktura je nesto nalik queue koji ima ogranicenu kolicinu mesta, kad novi hoce da dodje izbaci ovog sa 'kraja'
 /*ima recimo listu vrednosti koja radi kao ovaj queue, ali ispred toga ima hashmapu u kojoj na tim kljucevima cuva mesta gde se te vrednosti
