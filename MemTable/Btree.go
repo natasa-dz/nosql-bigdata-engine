@@ -174,11 +174,13 @@ func (t *Tree) Search(key string) (int, *Node) { //retVal je index u Node(keys) 
 	return -1, nil
 }
 
-func (t *Tree) Delete(key string) { //samo logicko brisanje izmenice tombstone, nece zapravo obrisati iz stabla
+func (t *Tree) Delete(key string) bool { //samo logicko brisanje izmenice tombstone, nece zapravo obrisati iz stabla
 	indexInNode, node := t.Search(key)
 	if node != nil {
 		node.keys[indexInNode].Tombstone = false
+		return true
 	}
+	return false
 }
 
 func (t *Tree) Traverse(node *Node) []*Node {
