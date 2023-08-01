@@ -47,7 +47,7 @@ func main() {
 	}*/
 	SortData(logs)
 	// Call writeToMultipleFiles function
-	//BuildSSTableMultiple(logs, 1, 1)
+	BuildSSTableMultiple(logs, 1, 1)
 
 	/*fmt.Println("Data written to multiple files successfully!")
 	file, err := os.Open("./Data/SSTables/Multiple/Index-1-1.bin")

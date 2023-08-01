@@ -6,8 +6,10 @@ import (
 	. "NAiSP/merkleTree"
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"sort"
 	"strconv"
 )
@@ -34,13 +36,10 @@ func BuildSSTableMultiple(sortedData []*Log, generation int, level int) {
 	var DataContent = new(bytes.Buffer)
 	var IndexContent = new(bytes.Buffer)
 	var SummaryContent = new(bytes.Buffer)
-	var MerkleContent = new(bytes.Buffer)
 
 	filter := BuildFilter(sortedData, len(sortedData), 0.01)
 	binary.Write(FilterContent, binary.LittleEndian, filter.Serialize().Bytes())
 
-	merkle := BuildMerkleTreeRoot(sortedData)
-	binary.Write(MerkleContent, binary.LittleEndian, SerializeMerkleTree(merkle))
 	var offsetLog uint64
 	offsetLog = 0
 	WriteSummaryHeader(sortedData, SummaryContent) //u summary ce ispisati prvi i poslednji kljuc iz indexa
@@ -54,12 +53,13 @@ func BuildSSTableMultiple(sortedData []*Log, generation int, level int) {
 		WriteIndexLog(IndexContent, uint64(data.KeySize), data.Key, offsetLog) //tek sad pisemo indexEntry u index bafer
 	}
 
+	merkle := BuildMerkleTreeRoot(sortedData)
 	//fje koje ce kreirati fajlove i ispisati sadrzaj navedenih bafera
 	WriteToFile(generation, level, "Data", "Multiple", DataContent)
 	WriteToFile(generation, level, "Index", "Multiple", IndexContent)
 	WriteToFile(generation, level, "Summary", "Multiple", SummaryContent)
 	WriteToFile(generation, level, "Bloom", "Multiple", FilterContent)
-	WriteToFile(generation, level, "Metadata", "Multiple", MerkleContent)
+	WriteToTxtFile(generation, level, "Metadata", "Multiple", hex.EncodeToString(SerializeMerkleTree(merkle)))
 }
 
 func WriteSummaryLog(SummaryContent *bytes.Buffer, KeySize, Key, OffsetInIndexFile any) {
@@ -85,6 +85,19 @@ func WriteToFile(generation int, level int, fileType string, fileOrganisation st
 	err := ioutil.WriteFile("./Data/SSTables/"+fileOrganisation+"/"+fileType+"-"+strconv.Itoa(generation)+"-"+strconv.Itoa(level)+".bin", bufferToWrite.Bytes(), 0644)
 	if err != nil {
 		fmt.Println("Err u pisanju fajla "+fileType, err)
+		return
+	}
+}
+func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation string, data string) {
+	file, err := os.Create("./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt")
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+	defer file.Close()
+	_, err = file.WriteString(data)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
 		return
 	}
 }
@@ -126,17 +139,14 @@ func WriteToSingleFile(logs []*Log, generation int, level int) error {
 	header.SummaryOffset += header.IndexOffset + uint64(len(serializedIndex))
 
 	var FileContent = new(bytes.Buffer)
-	var MerkleContent = new(bytes.Buffer)
 	merkle := BuildMerkleTreeRoot(logs)
 	binary.Write(FileContent, binary.LittleEndian, header.HeaderSerialize())
 	binary.Write(FileContent, binary.LittleEndian, serializedLogs)
 	binary.Write(FileContent, binary.LittleEndian, filterSerialized.Bytes())
 	binary.Write(FileContent, binary.LittleEndian, serializedIndex)
 	binary.Write(FileContent, binary.LittleEndian, summarySerialized)
-	binary.Write(MerkleContent, binary.LittleEndian, SerializeMerkleTree(merkle))
-
 	WriteToFile(generation, level, "Data", "Single", FileContent)
-	WriteToFile(generation, level, "Metadata", "Single", MerkleContent)
+	WriteToTxtFile(generation, level, "Metadata", "Single", hex.EncodeToString(SerializeMerkleTree(merkle)))
 
 	return nil
 }
