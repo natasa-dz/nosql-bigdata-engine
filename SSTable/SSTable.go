@@ -45,12 +45,12 @@ func BuildSSTableMultiple(sortedData []*Log, generation int, level int) {
 	WriteSummaryHeader(sortedData, SummaryContent) //u summary ce ispisati prvi i poslednji kljuc iz indexa
 	for i, data := range sortedData {              //za svaki podatak
 		binary.Write(DataContent, binary.LittleEndian, data.Serialize()) //ubaci ga u baffer
-		if ((i+1)%10) == 0 || i == 0 {                                   //svaki 10. kljuc - summary napravljen u fazonu da ima jos indexa ne samo prvi i poslednji
+		if ((i+1)%SUMMARY_BLOCK_SIZE) == 0 || i == 0 {                   //svaki 10. kljuc - summary napravljen u fazonu da ima jos indexa ne samo prvi i poslednji
 			WriteSummaryLog(SummaryContent, uint64(sortedData[i].KeySize), sortedData[i].Key, uint64(IndexContent.Len()))
 			//kako indexEntry i dalje nije zapisan pocetak njega je trenutna duzina indexcontent buffera, dakle ubacujemo ga u summary
 		}
-		offsetLog += uint64(len(data.Serialize()))
 		WriteIndexLog(IndexContent, uint64(data.KeySize), data.Key, offsetLog) //tek sad pisemo indexEntry u index bafer
+		offsetLog += uint64(len(data.Serialize()))
 	}
 
 	merkle := BuildMerkleTreeRoot(sortedData)

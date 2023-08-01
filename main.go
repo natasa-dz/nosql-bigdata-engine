@@ -39,63 +39,80 @@ func main() {
 		Key:       []byte("key3"),
 		Value:     []byte("value3"),
 	}
+	log4 := &Log{
+		CRC:       789,
+		Timestamp: 1626723627,
+		Tombstone: false,
+		KeySize:   4,
+		ValueSize: 6,
+		Key:       []byte("key4"),
+		Value:     []byte("value4"),
+	}
 
-	logs := []*Log{log1, log2, log3}
-	/*SortData(logs)
-	for i := 0; i < len(logs); i++ {
-		fmt.Println(string(logs[i].Key))
-	}*/
+	logs := []*Log{log1, log2, log3, log4}
 	SortData(logs)
 	// Call writeToMultipleFiles function
-	BuildSSTableMultiple(logs, 1, 1)
+	/*BuildSSTableMultiple(logs, 1, 1)
 
-	/*fmt.Println("Data written to multiple files successfully!")
-	file, err := os.Open("./Data/SSTables/Multiple/Index-1-1.bin")
+	fmt.Println("Data written to multiple files successfully!")
+	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
-	}*/
-	/*file2, err := os.Open("./Data/SSTables/Multiple/Data-1-1.bin")
+	}
+	file2, err := os.Open("./Data/SSTables/Multiple/Data-1-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
-	}*/
+	}
+	file3, err := os.Open("./Data/SSTables/Multiple/Index-1-1.bin")
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		return
+	}
+	file4, err := os.Open("./Data/SSTables/Multiple/Summary-1-1.bin")
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		return
+	}
 
 	//Logs test
-	/*var data []*Log
+	var data []*Log
 	offsetEnd, err := file2.Seek(0, os.SEEK_END)
 	data, _ = ReadLogs(file2, 0, uint64(offsetEnd))
 	for i := 0; i < len(data); i++ {
 		fmt.Println(string(data[i].Key))
-	}*/
+	}
 	//Bloom test
-	/*bloom := BloomFilter.ReadBloom(file, 0)
+	bloom := BloomFilter.ReadBloom(file, 0)
 	fmt.Println(bloom.BitSlices)
 	fmt.Println(bloom.M)
-	fmt.Println(bloom.K)*/
+	fmt.Println(bloom.K)
 
 	//Index test
-	/*offsetEnd, err := file.Seek(0, os.SEEK_END)
+	offsetEnd, err = file3.Seek(0, os.SEEK_END)
 	fmt.Println(offsetEnd)
-	indexEntries, _ := ReadIndex(file2, 0, offsetEnd)
+	indexEntries, _ := ReadIndex(file3, 0, offsetEnd)
 
 	for i := 0; i < len(indexEntries); i++ {
 		fmt.Println(string(indexEntries[i].Key))
 		fmt.Println(indexEntries[i].Offset)
-	}*/
+	}
 
 	//Summary test
-	/*summary, _ := ReadSummary(file2, 0)
+	summary, _ := ReadSummary(file4, 0)
 
 	fmt.Println(summary.StartKey)
 	fmt.Println(summary.EndKey)
 	for i := 0; i < len(summary.Entries); i++ {
 		fmt.Println(string(summary.Entries[i].Key))
 		fmt.Println(summary.Entries[i].Offset)
-	}*/
+	}
 
-	//defer file.Close()
-	//defer file2.Close()
+	defer file.Close()
+	defer file2.Close()
+	defer file3.Close()
+	defer file4.Close()*/
 	// Call writeToSingleFile function
 	err := WriteToSingleFile(logs, 1, 1)
 	if err != nil {
@@ -107,13 +124,6 @@ func main() {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	/*fmt.Println("Data written to a single file successfully!")
-
-	file, err := os.Open("singleTest.db")
-	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return
-	}*/
 	//Logs test
 	var data []*Log
 	header, _ := ReadHeader(file)
@@ -157,5 +167,4 @@ func main() {
 	}
 	defer file.Close()*/
 
-	fmt.Println("File content deleted.")
 }

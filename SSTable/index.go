@@ -89,7 +89,6 @@ func ReadIndexEntry(file *os.File, offset int64) (*IndexEntry, error) {
 func ReadIndex(file *os.File, offset int64, offsetEnd int64) ([]*IndexEntry, error) {
 	file.Seek(offset, io.SeekStart)
 
-	offset, _ = file.Seek(0, io.SeekCurrent)
 	var data []*IndexEntry
 	var loaded *IndexEntry
 
