@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash/crc32"
+	"io"
 	"os"
 	"time"
 )
@@ -32,7 +33,7 @@ const (
 	TOMBSTONE_SIZE  = 1
 	KEY_SIZE_SIZE   = 8
 	VALUE_SIZE_SIZE = 8
-	LOG_SIZE        = 29
+	//LOG_SIZE        = 29
 
 	LOW_WATER_MARK = 5
 	File           = "putanja koja se cita iz konfiguracije"
@@ -97,6 +98,23 @@ func Deserialize(serializedRecord []byte) Log {
 	return ret
 }
 
+func ReadLogs(file *os.File, offsetStart int64, offsetEnd uint64) ([]*Log, error) {
+	//za multiple 0, end
+	//za single logOffset, bloomOffset
+	file.Seek(offsetStart, io.SeekStart)
+	var data []*Log
+	var loaded *Log
+	var offset int64
+	offset = 0
+	//read until the end of logs
+	for uint64(offset) < offsetEnd {
+		loaded, _ = ReadLog(file)
+		offset, _ = file.Seek(0, io.SeekCurrent)
+		data = append(data, loaded)
+	}
+	return data, nil
+}
+
 func ReadLog(file *os.File) (*Log, error) {
 	var log Log
 
@@ -127,7 +145,6 @@ func ReadLog(file *os.File) (*Log, error) {
 	} else {
 		log.Tombstone = false
 	}
-	fmt.Println(log.Tombstone)
 	// Read KeySize
 	var keySizeBytes = make([]byte, KEY_SIZE_SIZE)
 	_, err = file.Read(keySizeBytes)
@@ -143,7 +160,6 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.ValueSize = int64(binary.LittleEndian.Uint64(valueSizeBytes))
-	fmt.Println(log.KeySize)
 	// Read Key
 	var keyBytes = make([]byte, log.KeySize)
 	_, err = file.Read(keyBytes)
@@ -151,7 +167,6 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.Key = keyBytes
-	fmt.Println(string(log.Key))
 
 	// Read Value
 	var valueBytes = make([]byte, log.ValueSize)
