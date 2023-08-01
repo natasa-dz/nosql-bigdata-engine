@@ -38,6 +38,66 @@ func WriteSummaryHeaderSingle(sortedData []*IndexEntry, SummaryContent *bytes.Bu
 	binary.Write(SummaryContent, binary.LittleEndian, []byte(sortedData[len(sortedData)-1].Key))
 }
 
+func ReadSummary(file *os.File, offset int64) (*Summary, error) {
+	offsetEnd, err := file.Seek(0, os.SEEK_END)
+	file.Seek(offset, io.SeekStart)
+	var startKeySize uint64
+	var endKeySize uint64
+
+	// Read the StartKeySize
+	var keySizeBytes = make([]byte, 8)
+	_, err = file.Read(keySizeBytes)
+	if err != nil {
+		return nil, err
+	}
+	startKeySize = uint64(binary.LittleEndian.Uint64(keySizeBytes))
+
+	// Read the StartKey
+	var startKeyBytes = make([]byte, startKeySize)
+	_, err = file.Read(startKeyBytes)
+	if err != nil {
+		return nil, err
+	}
+	startKey := string(startKeyBytes)
+
+	// Read the EndKeySize
+	var endKeySizeBytes = make([]byte, 8)
+	_, err = file.Read(endKeySizeBytes)
+	if err != nil {
+		return nil, err
+	}
+	endKeySize = uint64(binary.LittleEndian.Uint64(endKeySizeBytes))
+
+	// Read the EndKey
+	var endKeyBytes = make([]byte, endKeySize)
+	_, err = file.Read(endKeyBytes)
+	if err != nil {
+		return nil, err
+	}
+	endKey := string(endKeyBytes)
+
+	offset, _ = file.Seek(0, io.SeekCurrent)
+	var data []*IndexEntry
+	var loaded *IndexEntry
+
+	//read until the end of logs
+	for uint64(offset) < uint64(offsetEnd) {
+		loaded, _ = ReadIndexEntry(file, offset)
+		offset, _ = file.Seek(0, io.SeekCurrent)
+		data = append(data, loaded)
+	}
+	// Create and return the Summary struct
+	summary := &Summary{
+		StartKeySize: startKeySize,
+		EndKeySize:   endKeySize,
+		StartKey:     startKey,
+		EndKey:       endKey,
+		Entries:      data,
+	}
+
+	return summary, nil
+}
+
 // writes the summary header containing the boundaries of the SSTable (first and last keys).
 /*func SerializeSummary(f *os.File, summary Summary) error {
 
@@ -124,70 +184,6 @@ func WriteSummaryHeaderSingle(sortedData []*IndexEntry, SummaryContent *bytes.Bu
 	}
 	return false
 }*/
-
-// readSummaryHeader reads the summary header from the file and returns the Summary struct.
-func ReadSummary(file *os.File, offset int64) (*Summary, error) {
-	//TODO: istestirati jos ujutru ne radi!!
-	offsetEnd, err := file.Seek(0, os.SEEK_END)
-	file.Seek(offset, io.SeekStart)
-	var startKeySize uint64
-	var endKeySize uint64
-
-	// Read the StartKeySize
-	var keySizeBytes = make([]byte, 8)
-	_, err = file.Read(keySizeBytes)
-	if err != nil {
-		return nil, err
-	}
-	startKeySize = uint64(binary.LittleEndian.Uint64(keySizeBytes))
-
-	// Read the StartKey
-	var startKeyBytes = make([]byte, startKeySize)
-	_, err = file.Read(startKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-	startKey := string(startKeyBytes)
-
-	// Read the EndKeySize
-	var endKeySizeBytes = make([]byte, 8)
-	_, err = file.Read(endKeySizeBytes)
-	if err != nil {
-		return nil, err
-	}
-	endKeySize = uint64(binary.LittleEndian.Uint64(endKeySizeBytes))
-
-	// Read the EndKey
-	var endKeyBytes = make([]byte, endKeySize)
-	_, err = file.Read(endKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-	endKey := string(endKeyBytes)
-
-	offset, _ = file.Seek(0, io.SeekCurrent)
-	var data []*IndexEntry
-	var loaded *IndexEntry
-
-	//read until the end of logs
-	for uint64(offset) < uint64(offsetEnd) {
-		loaded, _ = ReadIndexEntry(file, offset)
-		offset, _ = file.Seek(0, io.SeekCurrent)
-		data = append(data, loaded)
-		fmt.Println("offsetAFTER", offset)
-	}
-	fmt.Println("offsetend", offsetEnd)
-	// Create and return the Summary struct
-	summary := &Summary{
-		StartKeySize: startKeySize,
-		EndKeySize:   endKeySize,
-		StartKey:     startKey,
-		EndKey:       endKey,
-		Entries:      data,
-	}
-
-	return summary, nil
-}
 
 //treba za search isto
 // FindIndexEntry finds the index entry for the given key in the SSTable file.

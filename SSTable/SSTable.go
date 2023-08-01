@@ -6,8 +6,8 @@ import (
 	. "NAiSP/merkleTree"
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -30,36 +30,36 @@ type SSTable struct {
 }
 
 // MULTIPLE:
-func BuildSSTableMultiple(sortedData []*Log, generation int) {
+func BuildSSTableMultiple(sortedData []*Log, generation int, level int) {
 	//cetri bafera za cetri razlicita fajla
 	var FilterContent = new(bytes.Buffer)
 	var DataContent = new(bytes.Buffer)
 	var IndexContent = new(bytes.Buffer)
 	var SummaryContent = new(bytes.Buffer)
-	var MerkleContent = new(bytes.Buffer)
 
 	filter := BuildFilter(sortedData, len(sortedData), 0.01)
-	binary.Write(FilterContent, binary.LittleEndian, filter.Serialize())
+	binary.Write(FilterContent, binary.LittleEndian, filter.Serialize().Bytes())
 
-	merkle := BuildMerkleTreeRoot(sortedData)
-	binary.Write(MerkleContent, binary.LittleEndian, SerializeMerkleTree(merkle))
-
+	var offsetLog uint64
+	offsetLog = 0
 	WriteSummaryHeader(sortedData, SummaryContent) //u summary ce ispisati prvi i poslednji kljuc iz indexa
 	for i, data := range sortedData {              //za svaki podatak
 		binary.Write(DataContent, binary.LittleEndian, data.Serialize()) //ubaci ga u baffer
-		if ((i+1)%10) == 0 || i == 0 {                                   //svaki 10. kljuc - summary napravljen u fazonu da ima jos indexa ne samo prvi i poslednji
-			WriteSummaryLog(SummaryContent, sortedData[i-1].KeySize, sortedData[i-1].Key, IndexContent.Len())
+		if ((i+1)%SUMMARY_BLOCK_SIZE) == 0 || i == 0 {                   //svaki 10. kljuc - summary napravljen u fazonu da ima jos indexa ne samo prvi i poslednji
+			WriteSummaryLog(SummaryContent, uint64(sortedData[i].KeySize), sortedData[i].Key, uint64(IndexContent.Len()))
 			//kako indexEntry i dalje nije zapisan pocetak njega je trenutna duzina indexcontent buffera, dakle ubacujemo ga u summary
 		}
-		WriteIndexLog(IndexContent, data.KeySize, data.Key, LOG_SIZE*i) //tek sad pisemo indexEntry u index bafer
+		WriteIndexLog(IndexContent, uint64(data.KeySize), data.Key, offsetLog) //tek sad pisemo indexEntry u index bafer
+		offsetLog += uint64(len(data.Serialize()))
 	}
 
+	merkle := BuildMerkleTreeRoot(sortedData)
 	//fje koje ce kreirati fajlove i ispisati sadrzaj navedenih bafera
-	WriteToFile(generation, "Data", DataContent)
-	WriteToFile(generation, "Index", IndexContent)
-	WriteToFile(generation, "Summary", SummaryContent)
-	WriteToFile(generation, "Bloom", FilterContent)
-	WriteToFile(generation, "Merkle", MerkleContent)
+	WriteToFile(generation, level, "Data", "Multiple", DataContent)
+	WriteToFile(generation, level, "Index", "Multiple", IndexContent)
+	WriteToFile(generation, level, "Summary", "Multiple", SummaryContent)
+	WriteToFile(generation, level, "Bloom", "Multiple", FilterContent)
+	WriteToTxtFile(generation, level, "Metadata", "Multiple", hex.EncodeToString(SerializeMerkleTree(merkle)))
 }
 
 func WriteSummaryLog(SummaryContent *bytes.Buffer, KeySize, Key, OffsetInIndexFile any) {
@@ -81,42 +81,35 @@ func WriteIndexLog(IndexContent *bytes.Buffer, KeySize, Key, OffSetInDataFile an
 	binary.Write(IndexContent, binary.LittleEndian, OffSetInDataFile) //ispisi offset bloka u Data fajlu
 }
 
-func WriteToFile(generation int, fileType string, bufferToWrite *bytes.Buffer) {
-	err := ioutil.WriteFile(fileType+"-Gen-"+strconv.Itoa(generation), bufferToWrite.Bytes(), 0644)
+func WriteToFile(generation int, level int, fileType string, fileOrganisation string, bufferToWrite *bytes.Buffer) {
+	err := ioutil.WriteFile("./Data/SSTables/"+fileOrganisation+"/"+fileType+"-"+strconv.Itoa(generation)+"-"+strconv.Itoa(level)+".bin", bufferToWrite.Bytes(), 0644)
 	if err != nil {
 		fmt.Println("Err u pisanju fajla "+fileType, err)
 		return
 	}
 }
-
-// ReadFromMultipleFiles - TODO:Algoritam otprilike-proveri da li se trazeni kljuc nalazi u BloomFilter-u, ako se ne nalazi- predji na sledeci SSTable, ako si nasao-otvori Summary za dati SSTable nadji asocirani Log, iscitaj entrije kako bi nasli odgovarajuci, kada se sve odradi-iscitaj SSTable
-// SINGLE FILE
-
-func ReadLogs(file *os.File) ([]*Log, error) {
-	header, err := ReadHeader(file)
+func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation string, data string) {
+	file, err := os.Create("./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt")
 	if err != nil {
-		return nil, err
+		fmt.Println("Error creating file:", err)
+		return
 	}
-	var data []*Log
-	var loaded *Log
-	var offset int64
-	offset = 0
-	//read until the end of logs
-	for uint64(offset) < header.BloomOffset {
-		loaded, _ = ReadLog(file)
-		offset, _ = file.Seek(0, io.SeekCurrent)
-		data = append(data, loaded)
+	defer file.Close()
+	_, err = file.WriteString(data)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return
 	}
-	return data, nil
 }
 
+// SINGLE FILE
 func SortData(logs []*Log) {
 	sort.Slice(logs, func(i, j int) bool {
 		return string(logs[i].Key) < string(logs[j].Key)
 	})
 }
 
-func WriteToSingleFile(logs []*Log, FILENAME string) error {
+func WriteToSingleFile(logs []*Log, generation int, level int) error {
 	SortData(logs)
 	header := Header{
 		LogsOffset:    32,
@@ -144,47 +137,23 @@ func WriteToSingleFile(logs []*Log, FILENAME string) error {
 	summary := BuildSummary(indexData, header.IndexOffset)
 	summarySerialized := summary.Bytes()
 	header.SummaryOffset += header.IndexOffset + uint64(len(serializedIndex))
-	fmt.Println("start", header.SummaryOffset)
-	fmt.Println("velicina", len(summarySerialized))
-	// Open the SSTable file
-	sstableFile, err := os.OpenFile(fmt.Sprintf("%s.db", FILENAME), os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	defer sstableFile.Close()
-	//--------------------------------------
 
-	// Write the header to the file
-	_, err = sstableFile.Write(header.HeaderSerialize())
-	if err != nil {
-		return err
-	}
-
-	// Write the logs to the file
-	_, err = sstableFile.Write(serializedLogs)
-	if err != nil {
-		return err
-	}
-	// Write the Bloom Filter to the file
-	_, err = sstableFile.Write(filterSerialized.Bytes())
-	if err != nil {
-		return err
-	}
-
-	// Write the Indexes to the file
-	_, err = sstableFile.Write(serializedIndex)
-	if err != nil {
-		return err
-	}
-
-	// Write the Summary to the file
-	_, err = sstableFile.Write(summarySerialized)
-	if err != nil {
-		return err
-	}
+	var FileContent = new(bytes.Buffer)
+	merkle := BuildMerkleTreeRoot(logs)
+	binary.Write(FileContent, binary.LittleEndian, header.HeaderSerialize())
+	binary.Write(FileContent, binary.LittleEndian, serializedLogs)
+	binary.Write(FileContent, binary.LittleEndian, filterSerialized.Bytes())
+	binary.Write(FileContent, binary.LittleEndian, serializedIndex)
+	binary.Write(FileContent, binary.LittleEndian, summarySerialized)
+	WriteToFile(generation, level, "Data", "Single", FileContent)
+	WriteToTxtFile(generation, level, "Metadata", "Single", hex.EncodeToString(SerializeMerkleTree(merkle)))
 
 	return nil
 }
+
+// ReadFromMultipleFiles - TODO:Algoritam otprilike-proveri da li se trazeni kljuc nalazi u BloomFilter-u,
+// ako se ne nalazi- predji na sledeci SSTable, ako si nasao-otvori Summary za dati SSTable nadji asocirani Log,
+//iscitaj entrije kako bi nasli odgovarajuci, kada se sve odradi-iscitaj SSTable
 
 // delete, deleteMultiple, readRecords---> implementiraj?
 
