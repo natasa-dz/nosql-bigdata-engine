@@ -29,6 +29,36 @@ type SSTable struct {
 	Metadata MerkleRoot
 }
 
+func BuildSSTable(sortedData []*Log, generation int, level int, sstableType string) {
+	if sstableType == "Single" {
+		BuildSSTableSingle(sortedData, generation, level)
+		return
+	}
+	BuildSSTableMultiple(sortedData, generation, level)
+}
+
+func GetAllLogs(file *os.File, sstableType string) ([]*Log, error) {
+	var data []*Log
+	if sstableType == "Single" {
+		header, _ := ReadHeader(file)
+		data, err := ReadLogs(file, int64(header.LogsOffset), header.BloomOffset)
+		if err != nil {
+			fmt.Println("Error reading logs from single file")
+			return nil, err
+		}
+		return data, nil
+	}
+	//for Multiple
+	offsetEnd, _ := file.Seek(0, os.SEEK_END)
+	data, err := ReadLogs(file, 0, uint64(offsetEnd))
+	if err != nil {
+		fmt.Println("Error reading logs from multiple file")
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // MULTIPLE:
 func BuildSSTableMultiple(sortedData []*Log, generation int, level int) {
 	//cetri bafera za cetri razlicita fajla
@@ -101,15 +131,14 @@ func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation
 		return
 	}
 }
-
-// SINGLE FILE
 func SortData(logs []*Log) {
 	sort.Slice(logs, func(i, j int) bool {
 		return string(logs[i].Key) < string(logs[j].Key)
 	})
 }
 
-func WriteToSingleFile(logs []*Log, generation int, level int) error {
+// SINGLE FILE
+func BuildSSTableSingle(logs []*Log, generation int, level int) error {
 	SortData(logs)
 	header := Header{
 		LogsOffset:    32,

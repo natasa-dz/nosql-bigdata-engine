@@ -130,7 +130,7 @@ func main() {
 	defer file3.Close()
 	defer file4.Close()*/
 	// Call writeToSingleFile function
-	err := WriteToSingleFile(logs, 1, 1)
+	err := BuildSSTableSingle(logs, 1, 1)
 	if err != nil {
 		fmt.Println("Error writing to a single file:", err)
 		return
