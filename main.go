@@ -3,10 +3,11 @@ package main
 import (
 	"NAiSP/BloomFilter"
 	. "NAiSP/Log"
-	//. "NAiSP/Menu"
-	. "NAiSP/SSTable"
 	"fmt"
 	"os"
+
+	//. "NAiSP/Menu"
+	. "NAiSP/SSTable"
 )
 
 func main() {
@@ -29,7 +30,7 @@ func main() {
 	// Test data for logs (assuming you have Log struct defined)
 	log1 := &Log{
 		CRC:       123,
-		Timestamp: 1626723625,
+		Timestamp: 1626723910,
 		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
@@ -38,31 +39,31 @@ func main() {
 	}
 	log2 := &Log{
 		CRC:       456,
-		Timestamp: 1626723626,
-		Tombstone: false,
+		Timestamp: 1626723991,
+		Tombstone: true,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key5"),
-		Value:     []byte("value2"),
+		Key:       []byte("key2"),
+		Value:     []byte("value5"),
 	}
 
 	log3 := &Log{
 		CRC:       789,
-		Timestamp: 1626723627,
+		Timestamp: 1626723629,
 		Tombstone: false,
-		KeySize:   4,
+		KeySize:   5,
 		ValueSize: 6,
-		Key:       []byte("key3"),
-		Value:     []byte("value3"),
+		Key:       []byte("key13"),
+		Value:     []byte("value5"),
 	}
 	log4 := &Log{
 		CRC:       789,
-		Timestamp: 1626723627,
+		Timestamp: 1626723699,
 		Tombstone: false,
 		KeySize:   4,
-		ValueSize: 6,
+		ValueSize: 7,
 		Key:       []byte("key4"),
-		Value:     []byte("value4"),
+		Value:     []byte("value11"),
 	}
 
 	logs := []*Log{log1, log2, log3, log4}
@@ -130,12 +131,12 @@ func main() {
 	defer file3.Close()
 	defer file4.Close()*/
 	// Call writeToSingleFile function
-	err := BuildSSTableSingle(logs, 1, 1)
+	/*err := BuildSSTableSingle(logs, 3, 1)
 	if err != nil {
 		fmt.Println("Error writing to a single file:", err)
 		return
-	}
-	file, err := os.Open("./Data/SSTables/Single/Data-1-1.bin")
+	}*/
+	file, err := os.Open("./Data/SSTables/Single/Data-2-2.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -147,6 +148,7 @@ func main() {
 	fmt.Println(data[0].Timestamp)
 	for i := 0; i < len(data); i++ {
 		fmt.Println(string(data[i].Key))
+		fmt.Println(string(data[i].Value))
 	}
 	//header, _ := ReadHeader(file)
 	//Bloom test
@@ -176,11 +178,6 @@ func main() {
 
 	defer file.Close()
 	//Delete file
-	/*file, err = os.OpenFile("singleTest.db", os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	defer file.Close()*/
 
+	//SizeTieredCompaction(1, "Single")
 }

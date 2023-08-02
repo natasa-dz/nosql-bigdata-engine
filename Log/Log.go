@@ -111,8 +111,13 @@ func ReadLogs(file *os.File, offsetStart int64, offsetEnd uint64) ([]*Log, error
 		loaded, _ = ReadLog(file)
 		offset, _ = file.Seek(0, io.SeekCurrent)
 		data = append(data, loaded)
+		fmt.Println("nakon", offsetEnd)
 	}
 	return data, nil
+}
+
+func (log Log) print() {
+	fmt.Println(log.Key, log.KeySize, log.ValueSize, log.Value, log.Tombstone, log.Timestamp, log.CRC)
 }
 
 func ReadLog(file *os.File) (*Log, error) {
@@ -125,7 +130,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.CRC = binary.LittleEndian.Uint32(crcBytes)
-
+	log.print()
 	// Read Timestamp
 	var timestampBytes = make([]byte, TIMESTAMP_SIZE)
 	_, err = file.Read(timestampBytes)
@@ -133,7 +138,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.Timestamp = int64(binary.LittleEndian.Uint64(timestampBytes))
-
+	log.print()
 	// Read Tombstone
 	var tombstoneByte = make([]byte, TOMBSTONE_SIZE)
 	_, err = file.Read(tombstoneByte)
@@ -145,6 +150,7 @@ func ReadLog(file *os.File) (*Log, error) {
 	} else {
 		log.Tombstone = false
 	}
+	log.print()
 	// Read KeySize
 	var keySizeBytes = make([]byte, KEY_SIZE_SIZE)
 	_, err = file.Read(keySizeBytes)
@@ -152,7 +158,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.KeySize = int64(binary.LittleEndian.Uint64(keySizeBytes))
-
+	log.print()
 	// Read ValueSize
 	var valueSizeBytes = make([]byte, VALUE_SIZE_SIZE)
 	_, err = file.Read(valueSizeBytes)
@@ -160,6 +166,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.ValueSize = int64(binary.LittleEndian.Uint64(valueSizeBytes))
+	log.print()
 	// Read Key
 	var keyBytes = make([]byte, log.KeySize)
 	_, err = file.Read(keyBytes)
@@ -167,7 +174,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.Key = keyBytes
-
+	log.print()
 	// Read Value
 	var valueBytes = make([]byte, log.ValueSize)
 
@@ -176,6 +183,8 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.Value = valueBytes
+
+	log.print()
 
 	return &log, nil
 }
