@@ -74,30 +74,6 @@ func (log Log) Serialize() []byte {
 	return serializedLog.Bytes()
 }
 
-func Deserialize(serializedRecord []byte) Log {
-	var ret Log
-
-	ret.CRC = binary.LittleEndian.Uint32(serializedRecord[:CRC_SIZE])
-
-	ret.KeySize = int64(binary.LittleEndian.Uint64(serializedRecord[CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE : CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE]))
-
-	ret.ValueSize = int64(binary.LittleEndian.Uint64(serializedRecord[CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE : CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE+VALUE_SIZE_SIZE]))
-
-	ret.Key = []byte(fmt.Sprintf("%s", serializedRecord[CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE+VALUE_SIZE_SIZE:CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE+VALUE_SIZE_SIZE+ret.KeySize]))
-
-	ret.Value = serializedRecord[CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE+VALUE_SIZE_SIZE+ret.KeySize : CRC_SIZE+TOMBSTONE_SIZE+TIMESTAMP_SIZE+KEY_SIZE_SIZE+VALUE_SIZE_SIZE+ret.KeySize+ret.ValueSize]
-
-	ret.Timestamp = int64(uint64(binary.LittleEndian.Uint64(serializedRecord[CRC_SIZE : CRC_SIZE+TIMESTAMP_SIZE])))
-
-	if serializedRecord[CRC_SIZE+TIMESTAMP_SIZE] == 1 {
-		ret.Tombstone = true
-	} else {
-		ret.Tombstone = false
-	}
-
-	return ret
-}
-
 func ReadLogs(file *os.File, offsetStart int64, offsetEnd uint64) ([]*Log, error) {
 	//za multiple 0, end
 	//za single logOffset, bloomOffset
@@ -111,7 +87,6 @@ func ReadLogs(file *os.File, offsetStart int64, offsetEnd uint64) ([]*Log, error
 		loaded, _ = ReadLog(file)
 		offset, _ = file.Seek(0, io.SeekCurrent)
 		data = append(data, loaded)
-		fmt.Println("nakon", offsetEnd)
 	}
 	return data, nil
 }
@@ -130,7 +105,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.CRC = binary.LittleEndian.Uint32(crcBytes)
-	log.print()
+	
 	// Read Timestamp
 	var timestampBytes = make([]byte, TIMESTAMP_SIZE)
 	_, err = file.Read(timestampBytes)
@@ -138,7 +113,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.Timestamp = int64(binary.LittleEndian.Uint64(timestampBytes))
-	log.print()
+
 	// Read Tombstone
 	var tombstoneByte = make([]byte, TOMBSTONE_SIZE)
 	_, err = file.Read(tombstoneByte)
@@ -150,7 +125,7 @@ func ReadLog(file *os.File) (*Log, error) {
 	} else {
 		log.Tombstone = false
 	}
-	log.print()
+
 	// Read KeySize
 	var keySizeBytes = make([]byte, KEY_SIZE_SIZE)
 	_, err = file.Read(keySizeBytes)
@@ -158,7 +133,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.KeySize = int64(binary.LittleEndian.Uint64(keySizeBytes))
-	log.print()
+
 	// Read ValueSize
 	var valueSizeBytes = make([]byte, VALUE_SIZE_SIZE)
 	_, err = file.Read(valueSizeBytes)
@@ -166,7 +141,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.ValueSize = int64(binary.LittleEndian.Uint64(valueSizeBytes))
-	log.print()
+
 	// Read Key
 	var keyBytes = make([]byte, log.KeySize)
 	_, err = file.Read(keyBytes)
@@ -174,17 +149,14 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.Key = keyBytes
-	log.print()
+
 	// Read Value
 	var valueBytes = make([]byte, log.ValueSize)
-
 	_, err = file.Read(valueBytes)
 	if err != nil {
 		return nil, err
 	}
 	log.Value = valueBytes
-
-	log.print()
 
 	return &log, nil
 }

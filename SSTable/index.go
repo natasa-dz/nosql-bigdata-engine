@@ -8,14 +8,12 @@ import (
 	"os"
 )
 
-// pojedinacni index
 type IndexEntry struct {
 	KeySize uint64
 	Key     string
 	Offset  uint64
 }
 
-// lista index-a
 type Index struct {
 	Entries []IndexEntry
 }
@@ -39,7 +37,6 @@ func BuildIndex(logs []*Log, initialOffset uint64) []*IndexEntry {
 	return indexEntries
 }
 
-// Serialize an IndexEntry to bytes
 func (index IndexEntry) SerializeIndexEntry() []byte {
 	var serializedIndex = new(bytes.Buffer)
 
@@ -47,15 +44,6 @@ func (index IndexEntry) SerializeIndexEntry() []byte {
 	binary.Write(serializedIndex, binary.LittleEndian, []byte(index.Key))
 	binary.Write(serializedIndex, binary.LittleEndian, index.Offset)
 	return serializedIndex.Bytes()
-}
-
-// Deserialize bytes to an IndexEntry
-func DeserializeIndexEntry(serializedIndex []byte) IndexEntry {
-	return IndexEntry{
-		KeySize: binary.LittleEndian.Uint64(serializedIndex[:8]),
-		Key:     string(serializedIndex[8 : 8+binary.LittleEndian.Uint64(serializedIndex[:8])]),
-		Offset:  binary.LittleEndian.Uint64(serializedIndex[8+binary.LittleEndian.Uint64(serializedIndex[:8]):]),
-	}
 }
 
 func ReadIndexEntry(file *os.File, offset int64) (*IndexEntry, error) {
@@ -101,7 +89,6 @@ func ReadIndex(file *os.File, offset int64, offsetEnd int64) ([]*IndexEntry, err
 	return data, nil
 }
 
-// Serialize an Index to bytes
 func SerializeIndexes(Entries []*IndexEntry) []byte {
 
 	var serializedIndexes = new(bytes.Buffer)
@@ -113,29 +100,4 @@ func SerializeIndexes(Entries []*IndexEntry) []byte {
 	}
 
 	return serializedIndexes.Bytes()
-}
-
-// Deserialize bytes to an Index
-func DeserializeIndexes(serializedIndexes []byte) Index {
-	var index Index
-	index.Entries = make([]IndexEntry, 0)
-
-	for i := 0; i < len(serializedIndexes); {
-		keySize := binary.LittleEndian.Uint64(serializedIndexes[i : i+8])
-		i += 8
-		key := string(serializedIndexes[i : i+int(keySize)]) // Convert i to int here
-		i += int(keySize)
-		offset := binary.LittleEndian.Uint64(serializedIndexes[i : i+8])
-		i += 8
-
-		entry := IndexEntry{
-			KeySize: keySize,
-			Key:     key,
-			Offset:  offset,
-		}
-
-		index.Entries = append(index.Entries, entry)
-	}
-
-	return index
 }

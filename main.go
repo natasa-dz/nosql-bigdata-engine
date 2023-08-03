@@ -2,8 +2,6 @@ package main
 
 import (
 	. "NAiSP/Log"
-	"fmt"
-
 	//. "NAiSP/Menu"
 	. "NAiSP/SSTable"
 )
@@ -67,7 +65,7 @@ func main() {
 	logs := []*Log{log1, log2, log3, log4}
 	SortData(logs)
 	// Call writeToMultipleFiles function
-	//BuildSSTableMultiple(logs, 1, 1)
+	//BuildSSTableMultiple(logs, 2, 1)
 
 	/*fmt.Println("Data written to multiple files successfully!")
 	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")
@@ -129,12 +127,12 @@ func main() {
 	defer file3.Close()
 	defer file4.Close()*/
 	// Call writeToSingleFile function
-	err := BuildSSTableSingle(logs, 1, 1)
+	/*err := BuildSSTableSingle(logs, 2, 1)
 	if err != nil {
 		fmt.Println("Error writing to a single file:", err)
 		return
-	}
-	/*file, err := os.Open("./Data/SSTables/Single/Data-1-3.bin")
+	}*/
+	/*file, err := os.Open("./Data/SSTables/Single/Data-1-2.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -143,12 +141,12 @@ func main() {
 	var data []*Log
 	header, _ := ReadHeader(file)
 	data, _ = ReadLogs(file, int64(header.LogsOffset), header.BloomOffset)
-	fmt.Println(data[0].Timestamp)
+
 	for i := 0; i < len(data); i++ {
 		fmt.Println(string(data[i].Key))
 		fmt.Println(string(data[i].Value))
 	}
-	//header, _ := ReadHeader(file)
+
 	//Bloom test
 	bloom := BloomFilter.ReadBloom(file, int64(header.BloomOffset))
 	fmt.Println(bloom.BitSlices)
@@ -175,7 +173,6 @@ func main() {
 	}
 
 	defer file.Close()*/
-	//Delete file
 
-	//SizeTieredCompaction(1, "Multiple")
+	//SizeTieredCompaction(1, "Single")
 }
