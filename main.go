@@ -1,10 +1,8 @@
 package main
 
 import (
-	"NAiSP/BloomFilter"
 	. "NAiSP/Log"
 	"fmt"
-	"os"
 
 	//. "NAiSP/Menu"
 	. "NAiSP/SSTable"
@@ -30,21 +28,21 @@ func main() {
 	// Test data for logs (assuming you have Log struct defined)
 	log1 := &Log{
 		CRC:       123,
-		Timestamp: 1626723910,
+		Timestamp: 1626723915,
 		Tombstone: false,
-		KeySize:   4,
+		KeySize:   5,
 		ValueSize: 6,
-		Key:       []byte("key1"),
+		Key:       []byte("key25"),
 		Value:     []byte("value1"),
 	}
 	log2 := &Log{
 		CRC:       456,
-		Timestamp: 1626723991,
-		Tombstone: true,
-		KeySize:   4,
+		Timestamp: 1626723999,
+		Tombstone: false,
+		KeySize:   5,
 		ValueSize: 6,
-		Key:       []byte("key2"),
-		Value:     []byte("value5"),
+		Key:       []byte("key26"),
+		Value:     []byte("value1"),
 	}
 
 	log3 := &Log{
@@ -53,41 +51,41 @@ func main() {
 		Tombstone: false,
 		KeySize:   5,
 		ValueSize: 6,
-		Key:       []byte("key13"),
-		Value:     []byte("value5"),
+		Key:       []byte("key27"),
+		Value:     []byte("value1"),
 	}
 	log4 := &Log{
 		CRC:       789,
-		Timestamp: 1626723699,
+		Timestamp: 1626721699,
 		Tombstone: false,
-		KeySize:   4,
-		ValueSize: 7,
-		Key:       []byte("key4"),
-		Value:     []byte("value11"),
+		KeySize:   5,
+		ValueSize: 6,
+		Key:       []byte("key23"),
+		Value:     []byte("value5"),
 	}
 
 	logs := []*Log{log1, log2, log3, log4}
 	SortData(logs)
 	// Call writeToMultipleFiles function
-	/*BuildSSTableMultiple(logs, 1, 1)
+	//BuildSSTableMultiple(logs, 1, 1)
 
-	fmt.Println("Data written to multiple files successfully!")
-	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-1.bin")
+	/*fmt.Println("Data written to multiple files successfully!")
+	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	file2, err := os.Open("./Data/SSTables/Multiple/Data-1-1.bin")
+	file2, err := os.Open("./Data/SSTables/Multiple/Data-1-2.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	file3, err := os.Open("./Data/SSTables/Multiple/Index-1-1.bin")
+	file3, err := os.Open("./Data/SSTables/Multiple/Index-1-2.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	file4, err := os.Open("./Data/SSTables/Multiple/Summary-1-1.bin")
+	file4, err := os.Open("./Data/SSTables/Multiple/Summary-1-2.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -131,12 +129,12 @@ func main() {
 	defer file3.Close()
 	defer file4.Close()*/
 	// Call writeToSingleFile function
-	/*err := BuildSSTableSingle(logs, 3, 1)
+	err := BuildSSTableSingle(logs, 1, 1)
 	if err != nil {
 		fmt.Println("Error writing to a single file:", err)
 		return
-	}*/
-	file, err := os.Open("./Data/SSTables/Single/Data-2-2.bin")
+	}
+	/*file, err := os.Open("./Data/SSTables/Single/Data-1-3.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -176,8 +174,8 @@ func main() {
 		fmt.Println(indexEntries[i].Offset)
 	}
 
-	defer file.Close()
+	defer file.Close()*/
 	//Delete file
 
-	//SizeTieredCompaction(1, "Single")
+	//SizeTieredCompaction(1, "Multiple")
 }
