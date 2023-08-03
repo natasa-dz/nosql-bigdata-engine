@@ -32,16 +32,10 @@ func (t *Tree) GetNumOfElements() uint {
 // Insertuje na odredjeni index u arrayu, a ove ostale pomeri za jedno mesto desno
 func (node *Node) InsertDataIntoArray(index int, data Log.Log) {
 	if len(node.keys) == index { //stavljamo ga na kraj
-		// MOJ WORKAROUND BUGA KOJI NEMAM BLAGE ZASTO SE DESAVA??
-		//TODO: videti sa nekim, nez dal ce ovo praviti problem na nekim drugim mestima gde koristim append koji mi je pravio problem
-		//		i da li je ovo resilo ceo problem ili radi samo za ovaj case iz nekog nepoznatog razloga, takodje sta raditi sa istom ovom
-		//		fjom ali za Node-ove
 		list := make([]Log.Log, len(node.keys)+1)
 		copy(list, node.keys)
 		list[len(node.keys)] = data
 		node.keys = list
-		//******************KOD KOJI JE BIO RANIJE I PRAVIO ERROR NA InsertOVANJU 7 PRI REDOSLEDU(10,20,5,6,7)
-		//node.keys = append(node.keys, value)
 	} else { //ako ide negde pre kraja odredjeni se pomeraju udesno da bi napravili mesto
 		node.keys = append(node.keys[:index+1], node.keys[index:]...)
 		node.keys[index] = data
@@ -87,7 +81,6 @@ func (node *Node) InsertNonFull(data Log.Log) int {
 	return i
 }
 
-// TODO moglo bi se refaktorisati...
 func (node *Node) splitCurrent(root bool, parent *Node) *Node {
 	if root == true { //ako je u pitanju root malo je drugacije jer stvaramo potpuno novog parenta dok ako nije root samo dajemo cvoru iznad
 		parent = &Node{leaf: false, keys: []Log.Log{node.keys[len(node.keys)/2]}}
