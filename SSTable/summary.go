@@ -3,7 +3,6 @@ package SSTable
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"os"
 )
@@ -19,11 +18,9 @@ type Summary struct {
 func BuildSummary(data []*IndexEntry, indexOffset uint64) *bytes.Buffer {
 	var SummaryContent = new(bytes.Buffer)
 	var offset = indexOffset
-	fmt.Println("OFFSET", offset)
 	WriteSummaryHeaderSingle(data, SummaryContent) //u summary ce ispisati prvi i poslednji kljuc iz indexa
 	for i, entry := range data {
 		if ((i+1)%SUMMARY_BLOCK_SIZE) == 0 || i == 0 {
-			fmt.Println("OFFSET", offset)
 			WriteSummaryLog(SummaryContent, data[i].KeySize, []byte(data[i].Key), offset)
 		}
 		offset += uint64(len(entry.SerializeIndexEntry()))
@@ -98,79 +95,7 @@ func ReadSummary(file *os.File, offset int64) (*Summary, error) {
 	return summary, nil
 }
 
-// writes the summary header containing the boundaries of the SSTable (first and last keys).
-/*func SerializeSummary(f *os.File, summary Summary) error {
-
-	startKeySizeBytes := make([]byte, binary.Size(summary.StartKeySize))
-	endKeySizeBytes := make([]byte, binary.Size(summary.EndKeySize))
-
-	binary.LittleEndian.PutUint64(startKeySizeBytes, summary.StartKeySize)
-	binary.LittleEndian.PutUint64(endKeySizeBytes, summary.EndKeySize)
-
-	// Write the sizes of the first and last keys to the file
-	_, err := f.Write(startKeySizeBytes)
-	if err != nil {
-		return err
-	}
-
-	_, err = f.Write(endKeySizeBytes)
-	if err != nil {
-		return err
-	}
-
-	// Write the first and last keys to the file
-	_, err = f.WriteString(summary.StartKey)
-	if err != nil {
-		return err
-	}
-
-	_, err = f.WriteString(summary.EndKey)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}*/
-
-/*func (summary Summary) Serialize() []byte {
-	// Create a buffer to store the serialized data
-	serializedSummary := new(bytes.Buffer)
-
-	// Write the StartKeySize and EndKeySize to the buffer
-	binary.Write(serializedSummary, binary.LittleEndian, summary.StartKeySize)
-	binary.Write(serializedSummary, binary.LittleEndian, summary.EndKeySize)
-
-	// Write the StartKey and EndKey to the buffer as bytes
-	binary.Write(serializedSummary, binary.LittleEndian, []byte(summary.StartKey))
-	binary.Write(serializedSummary, binary.LittleEndian, []byte(summary.EndKey))
-
-	// Serialize the Indexes and append it to the buffer
-	serializedIndexes := summary.Indexes.SerializeIndexes()
-	serializedSummary.Write(serializedIndexes)
-
-	return serializedSummary.Bytes()
-}*/
-
-// deserializeSummary deserializes the serializedSummary byte slice into a Summary struct.
-/*func DeserializeSummary(serializedSummary []byte) Summary {
-
-	var startKeySize = binary.LittleEndian.Uint64(serializedSummary[:8])
-	var endKeySize = binary.LittleEndian.Uint64(serializedSummary[8:16])
-	var startKey = string(serializedSummary[16 : 16+startKeySize])
-	var endKey = string(serializedSummary[16+startKeySize : 16+startKeySize+endKeySize])
-
-	// Calculate the offset for the Indexes data after startKey and endKey
-	indexesOffset := 16 + startKeySize + endKeySize
-
-	return Summary{
-		StartKeySize: startKeySize,
-		EndKeySize:   endKeySize,
-		StartKey:     startKey,
-		EndKey:       endKey,
-		Indexes:      DeserializeIndexes(serializedSummary[indexesOffset:]),
-	}
-}*/
-//treba za search
+//TREBA ZA SEARCH (Natasine neke funkcije od ranije)
 /*func IsKeyInSummary(key []byte, file *os.File, offset int64) bool {
 	summary, err := ReadSummary(file, offset)
 

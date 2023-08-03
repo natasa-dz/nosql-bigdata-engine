@@ -29,6 +29,36 @@ type SSTable struct {
 	Metadata MerkleRoot
 }
 
+func BuildSSTable(sortedData []*Log, generation int, level int, sstableType string) {
+	if sstableType == "Single" {
+		BuildSSTableSingle(sortedData, generation, level)
+		return
+	}
+	BuildSSTableMultiple(sortedData, generation, level)
+}
+
+func GetAllLogs(file *os.File, sstableType string) ([]*Log, error) {
+	var data []*Log
+	if sstableType == "Single" {
+		header, _ := ReadHeader(file)
+		data, err := ReadLogs(file, int64(header.LogsOffset), header.BloomOffset)
+		if err != nil {
+			fmt.Println("Error reading logs from single file")
+			return nil, err
+		}
+		return data, nil
+	}
+	//for Multiple
+	offsetEnd, _ := file.Seek(0, os.SEEK_END)
+	data, err := ReadLogs(file, 0, uint64(offsetEnd))
+	if err != nil {
+		fmt.Println("Error reading logs from multiple file")
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // MULTIPLE:
 func BuildSSTableMultiple(sortedData []*Log, generation int, level int) {
 	//cetri bafera za cetri razlicita fajla
@@ -36,6 +66,7 @@ func BuildSSTableMultiple(sortedData []*Log, generation int, level int) {
 	var DataContent = new(bytes.Buffer)
 	var IndexContent = new(bytes.Buffer)
 	var SummaryContent = new(bytes.Buffer)
+	TOCData := ""
 
 	filter := BuildFilter(sortedData, len(sortedData), 0.01)
 	binary.Write(FilterContent, binary.LittleEndian, filter.Serialize().Bytes())
@@ -55,11 +86,12 @@ func BuildSSTableMultiple(sortedData []*Log, generation int, level int) {
 
 	merkle := BuildMerkleTreeRoot(sortedData)
 	//fje koje ce kreirati fajlove i ispisati sadrzaj navedenih bafera
-	WriteToFile(generation, level, "Data", "Multiple", DataContent)
-	WriteToFile(generation, level, "Index", "Multiple", IndexContent)
-	WriteToFile(generation, level, "Summary", "Multiple", SummaryContent)
-	WriteToFile(generation, level, "Bloom", "Multiple", FilterContent)
-	WriteToTxtFile(generation, level, "Metadata", "Multiple", hex.EncodeToString(SerializeMerkleTree(merkle)))
+	WriteToFile(generation, level, "Data", "Multiple", DataContent, &TOCData)
+	WriteToFile(generation, level, "Index", "Multiple", IndexContent, &TOCData)
+	WriteToFile(generation, level, "Summary", "Multiple", SummaryContent, &TOCData)
+	WriteToFile(generation, level, "Bloom", "Multiple", FilterContent, &TOCData)
+	WriteToTxtFile(generation, level, "Metadata", "Multiple", hex.EncodeToString(SerializeMerkleTree(merkle)), &TOCData)
+	WriteToTxtFile(generation, level, "TOC", "Multiple", TOCData, nil)
 }
 
 func WriteSummaryLog(SummaryContent *bytes.Buffer, KeySize, Key, OffsetInIndexFile any) {
@@ -81,15 +113,21 @@ func WriteIndexLog(IndexContent *bytes.Buffer, KeySize, Key, OffSetInDataFile an
 	binary.Write(IndexContent, binary.LittleEndian, OffSetInDataFile) //ispisi offset bloka u Data fajlu
 }
 
-func WriteToFile(generation int, level int, fileType string, fileOrganisation string, bufferToWrite *bytes.Buffer) {
+func WriteToFile(generation int, level int, fileType string, fileOrganisation string, bufferToWrite *bytes.Buffer, TOCData *string) {
 	err := ioutil.WriteFile("./Data/SSTables/"+fileOrganisation+"/"+fileType+"-"+strconv.Itoa(generation)+"-"+strconv.Itoa(level)+".bin", bufferToWrite.Bytes(), 0644)
+	//adding paths of sstable files to TOC
+	*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".bin" + "\n"
 	if err != nil {
 		fmt.Println("Err u pisanju fajla "+fileType, err)
 		return
 	}
 }
-func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation string, data string) {
+func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation string, data string, TOCData *string) {
 	file, err := os.Create("./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt")
+	if TOCData != nil {
+		//adding paths of sstable files to TOC
+		*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt" + "\n"
+	}
 	if err != nil {
 		fmt.Println("Error creating file:", err)
 		return
@@ -101,15 +139,14 @@ func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation
 		return
 	}
 }
-
-// SINGLE FILE
 func SortData(logs []*Log) {
 	sort.Slice(logs, func(i, j int) bool {
 		return string(logs[i].Key) < string(logs[j].Key)
 	})
 }
 
-func WriteToSingleFile(logs []*Log, generation int, level int) error {
+// SINGLE FILE
+func BuildSSTableSingle(logs []*Log, generation int, level int) error {
 	SortData(logs)
 	header := Header{
 		LogsOffset:    32,
@@ -145,122 +182,13 @@ func WriteToSingleFile(logs []*Log, generation int, level int) error {
 	binary.Write(FileContent, binary.LittleEndian, filterSerialized.Bytes())
 	binary.Write(FileContent, binary.LittleEndian, serializedIndex)
 	binary.Write(FileContent, binary.LittleEndian, summarySerialized)
-	WriteToFile(generation, level, "Data", "Single", FileContent)
-	WriteToTxtFile(generation, level, "Metadata", "Single", hex.EncodeToString(SerializeMerkleTree(merkle)))
-
+	TOCData := ""
+	WriteToFile(generation, level, "Data", "Single", FileContent, &TOCData)
+	WriteToTxtFile(generation, level, "Metadata", "Single", hex.EncodeToString(SerializeMerkleTree(merkle)), &TOCData)
+	WriteToTxtFile(generation, level, "TOC", "Single", TOCData, nil)
 	return nil
 }
 
-// ReadFromMultipleFiles - TODO:Algoritam otprilike-proveri da li se trazeni kljuc nalazi u BloomFilter-u,
+// SearchFromMultipleFiles - TODO:Algoritam otprilike-proveri da li se trazeni kljuc nalazi u BloomFilter-u,
 // ako se ne nalazi- predji na sledeci SSTable, ako si nasao-otvori Summary za dati SSTable nadji asocirani Log,
 //iscitaj entrije kako bi nasli odgovarajuci, kada se sve odradi-iscitaj SSTable
-
-// delete, deleteMultiple, readRecords---> implementiraj?
-
-///////////////////// META DATA	===> NE BRISI OVO DOLE!!!!!
-
-/*func buildMetaData():
-otprilike ideja- sortiraj-sortData(), kreiraj TOC, kreiraj MerkleTree-buildMerkleTreeRoot-vraca hash root-a,
-*/
-
-/*type TOCEntry struct {
-	FileName    string
-	StartOffset int64
-	EndOffset   int64
-	MinKey      []byte
-	MaxKey      []byte
-}
-
-type TOC []TOCEntry
-
-type Metadata struct {
-	Version      string
-	DataSummary  *Summary
-	BloomFilter  *Bloom2
-	SSTableIndex *Index
-	TOC          TOC
-	MerkleRoot   *Node
-}
-
-func BuildMetaData(dataMap map[string]Data, bloomFilter *Bloom2, sstableFileName string, generation int) (*Metadata, error) {
-
-	// Convert the map to a slice of Data for sorting and other operations
-	var dataSlice []Data
-	for _, data := range dataMap {
-		dataSlice = append(dataSlice, data)
-	}
-
-	// Sort the data
-	sortedData := SortData1(dataSlice)
-
-	// Build the Bloom Filter for the sorted data?
-	for _, data := range sortedData {
-		bloomFilter.Add([]byte(data.Key))
-	}
-
-	// Build the SSTable Index
-	sstableIndex := BuildIndex(sortedData)
-
-	// Build the Merkle Tree from the sorted data
-	merkleRoot := BuildMerkleTreeRoot(sortedData)
-
-	const SSTableVersion = "1.0"
-
-	// Write the SSTable to disk and get the actual file size
-	fileSize, err := WriteSSTableToDisk(sstableFileName, sortedData)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a Table of Contents entry for this SSTable
-	tocEntry := TOCEntry{
-		FileName:    sstableFileName,
-		StartOffset: 0, // In this example, we assume that the SSTable starts at offset 0.
-		EndOffset:   fileSize,
-		MinKey:      []byte(sortedData[0].Key),
-		MaxKey:      []byte(sortedData[len(sortedData)-1].Key),
-	}
-
-	// Create the Table of Contents
-	toc := TOC{tocEntry}
-
-	// Update the TOCEntry with the actual file size
-	tocEntry.StartOffset = 0 // In this example, we assume that the SSTable starts at offset 0.
-	tocEntry.EndOffset = fileSize
-
-	// Create the Metadata object
-	metadata := &Metadata{
-		Version:      SSTableVersion,
-		DataSummary:  BuildSummary(sortedData, generation), // Pass the generation here
-		BloomFilter:  bloomFilter,
-		SSTableIndex: sstableIndex,
-		TOC:          toc,
-		MerkleRoot:   merkleRoot,
-	}
-
-	return metadata, nil
-}
-*/
-
-//func SortData(memtable map[string]Data) []Data {
-//	// Create a slice to hold the data from the memtable
-//	dataSlice := make([]Data, 0, len(memtable))
-//
-//	// Convert the map to a slice of Data entries
-//	for _, data := range memtable {
-//		dataSlice = append(dataSlice, data)
-//	}
-//
-//	// Sort the Data slice by Key in ascending order
-//	sort.Slice(dataSlice, func(i, j int) bool {
-//		return dataSlice[i].Key < dataSlice[j].Key
-//	})
-//
-//	// Assign incremental Index values to the sorted entries
-//	for i, entry := range dataSlice {
-//		entry.Index = int64(i)
-//		dataSlice[i] = entry
-//	}
-//
-//	return dataSlice
-//}
