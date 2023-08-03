@@ -2,29 +2,28 @@ package main
 
 import (
 	. "NAiSP/Log"
-	//. "NAiSP/Menu"
-	. "NAiSP/SSTable"
+	. "NAiSP/Menu"
 )
 
 func main() {
 	//=======MENU TESTS======================
-	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
-	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}
-	//l3 := Log{Key: []byte("key3"), Value: []byte("val")}
-	//l4 := Log{Key: []byte("key4"), Value: []byte("val")}
-	//l5 := Log{Key: []byte("key5"), Value: []byte("val")}
-	//l6 := Log{Key: []byte("key6"), Value: []byte("val")}
-	//l7 := Log{Key: []byte("key7"), Value: []byte("val")}
-	//l8 := Log{Key: []byte("key8"), Value: []byte("val")}
-	//l9 := Log{Key: []byte("key9"), Value: []byte("val")}
-	//l10 := Log{Key: []byte("key10"), Value: []byte("val")}
-	//l11 := Log{Key: []byte("key11"), Value: []byte("val")}
-	//
-	//slice := []*Log{&l1, &l2, &l3, &l4, &l5, &l6, &l7, &l8, &l9, &l10, &l11}
-	//LIST_RANGESCAN_PaginationResponse(slice)
+	l1 := Log{Key: []byte("key1"), Value: []byte("val")}
+	l2 := Log{Key: []byte("key2"), Value: []byte("val")}
+	l3 := Log{Key: []byte("key3"), Value: []byte("val")}
+	l4 := Log{Key: []byte("key4"), Value: []byte("val")}
+	l5 := Log{Key: []byte("key5"), Value: []byte("val")}
+	l6 := Log{Key: []byte("key6"), Value: []byte("val")}
+	l7 := Log{Key: []byte("key7"), Value: []byte("val")}
+	l8 := Log{Key: []byte("key8"), Value: []byte("val")}
+	l9 := Log{Key: []byte("key9"), Value: []byte("val")}
+	l10 := Log{Key: []byte("key10"), Value: []byte("val")}
+	l11 := Log{Key: []byte("key11"), Value: []byte("val")}
+
+	slice := []*Log{&l1, &l2, &l3, &l4, &l5, &l6, &l7, &l8, &l9, &l10, &l11}
+	LIST_RANGESCAN_PaginationResponse(slice)
 
 	// Test data for logs (assuming you have Log struct defined)
-	log1 := &Log{
+	/*log1 := &Log{
 		CRC:       123,
 		Timestamp: 1626723915,
 		Tombstone: false,
@@ -65,7 +64,7 @@ func main() {
 	logs := []*Log{log1, log2, log3, log4}
 	SortData(logs)
 	// Call writeToMultipleFiles function
-	//BuildSSTableMultiple(logs, 2, 1)
+	//BuildSSTableMultiple(logs, 2, 1)	NOTE OBOO
 
 	/*fmt.Println("Data written to multiple files successfully!")
 	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")
@@ -174,5 +173,5 @@ func main() {
 
 	defer file.Close()*/
 
-	//SizeTieredCompaction(1, "Single")
+	//SizeTieredCompaction(1, "Single")*/
 }

@@ -116,18 +116,14 @@ func WriteIndexLog(IndexContent *bytes.Buffer, KeySize, Key, OffSetInDataFile an
 func WriteToFile(generation int, level int, fileType string, fileOrganisation string, bufferToWrite *bytes.Buffer, TOCData *string) {
 	err := ioutil.WriteFile("./Data/SSTables/"+fileOrganisation+"/"+fileType+"-"+strconv.Itoa(generation)+"-"+strconv.Itoa(level)+".bin", bufferToWrite.Bytes(), 0644)
 	//adding paths of sstable files to TOC
-	*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".bin" + "\n"
 	if err != nil {
 		fmt.Println("Err u pisanju fajla "+fileType, err)
 		return
 	}
+	*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".bin" + "\n"
 }
 func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation string, data string, TOCData *string) {
 	file, err := os.Create("./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt")
-	if TOCData != nil {
-		//adding paths of sstable files to TOC
-		*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt" + "\n"
-	}
 	if err != nil {
 		fmt.Println("Error creating file:", err)
 		return
@@ -137,6 +133,10 @@ func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation
 	if err != nil {
 		fmt.Println("Error writing to file:", err)
 		return
+	}
+	if TOCData != nil {
+		//adding paths of sstable files to TOC
+		*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt" + "\n"
 	}
 }
 func SortData(logs []*Log) {

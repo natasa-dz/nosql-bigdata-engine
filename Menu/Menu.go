@@ -144,8 +144,8 @@ func RANGESCAN_Menu() (string, string) {
 
 func LIST_RANGESCAN_PaginationResponse(results []*Log) {
 	minIndexToShow := 0
-	maxIndexToShow := 10 //nece biti bkv najveci index za prikaz mora jedan veci jer je exclusive taj drugi index
-	if len(results) < 10 {
+	maxIndexToShow := 5 //nece biti bkv najveci index za prikaz mora jedan veci jer je exclusive taj drugi index
+	if len(results) < 5 {
 		printPage(results)
 	} else {
 		var input string
@@ -154,24 +154,24 @@ func LIST_RANGESCAN_PaginationResponse(results []*Log) {
 			printPage(resToShow)
 			input = paginationMenu()
 			if strings.ToUpper(input) == "NEXT" {
-				if maxIndexToShow >= len(results) {
+				if maxIndexToShow >= len(results) { //nema vise gde
 					fmt.Println("You have reached last page.")
 					continue
 				}
-				minIndexToShow += 10
-				maxIndexToShow += 10
-				if maxIndexToShow > len(results)-1 {
+				minIndexToShow += 5
+				maxIndexToShow += 5
+				if maxIndexToShow > len(results)-1 { //da ne bi bacao OUT OF RANGE err izjednacimo ga sa duzinom
 					maxIndexToShow = len(results)
 				}
 			} else if strings.ToUpper(input) == "PREVIOUS" {
-				if minIndexToShow == 0 {
+				if minIndexToShow == 0 { //stigli smo do kraja ne moze vise nazad
 					fmt.Println("You cant go back. This is first page.")
 					continue
 				}
-				maxIndexToShow -= 10
-				minIndexToShow -= 10
-				if minIndexToShow == 0 {
-					maxIndexToShow = 10
+				maxIndexToShow -= 5
+				minIndexToShow -= 5
+				if maxIndexToShow != len(results) {
+					maxIndexToShow = minIndexToShow + 5
 				}
 			} else if strings.ToUpper(input) == "X" {
 				break
