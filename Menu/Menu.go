@@ -9,30 +9,43 @@ import (
 	"strings"
 )
 
-func WriteMenu() {
+func WriteAppInitializationMenu() string {
+	fmt.Println("You started app. Do you want to use custom configuration, or you want to use configuration that we made?")
+	fmt.Println("Type \"custom\"/\"premade\"")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	retVal := scanner.Text()
+	return strings.ToUpper(retVal)
+}
+
+func WriteMainMenu() string {
 	fmt.Println("===========================MENU====================")
 	fmt.Println("1. Insert new Log (key, value) [PUT]")
 	fmt.Println("2. Search for Log [GET]")
 	fmt.Println("3. Delete Log [DELETE]")
 	fmt.Println("4. List Logs by prefix [LIST]")
 	fmt.Println("5. List Logs by range [RANGE SCAN]")
+	fmt.Println("X. Exit [EXIT]")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	retVal := scanner.Text()
+	return strings.ToUpper(retVal)
 }
 
-func PUT_Menu() (string, []byte) {
-	var key string
-	var value []byte
+func PUT_Menu() ([]byte, []byte) {
+	var key, value []byte
 	for true {
 		fmt.Println("Enter key: ")
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
-			key = scanner.Text()
+			key = scanner.Bytes()
 		}
 		fmt.Println("Enter value: ")
 		scanner2 := bufio.NewScanner(os.Stdin)
 		if scanner2.Scan() {
 			value = scanner2.Bytes()
 		}
-		if key == "" || string(value) == "" {
+		if string(key) == "" || string(value) == "" {
 			fmt.Println("Both key and value can not be empty")
 			continue
 		}

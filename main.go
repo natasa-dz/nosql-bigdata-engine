@@ -1,12 +1,16 @@
 package main
 
 import (
-	. "NAiSP/Log"
+	application "NAiSP/Application"
 	. "NAiSP/Menu"
 )
 
 func main() {
-	//=======MENU TESTS======================
+	choiceOfConfig := WriteAppInitializationMenu()
+	app := application.InitializeApp(choiceOfConfig)
+	app.StartApp()
+
+	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}
 	//l3 := Log{Key: []byte("key3"), Value: []byte("val")}
@@ -21,7 +25,31 @@ func main() {
 	//
 	//slice := []*Log{&l1, &l2, &l3, &l4, &l5, &l6, &l7, &l8, &l9, &l10, &l11}
 	//LIST_RANGESCAN_PaginationResponse(slice)
-
+	//------------------------------------------------------------------------------
+	//=======================BTREE TESTS==========================================
+	//l1 := Log{Key: []byte("10"), Value: []byte("val10")}
+	//l2 := Log{Key: []byte("20"), Value: []byte("val20")}
+	//l3 := Log{Key: []byte("5"), Value: []byte("val5")}
+	//l4 := Log{Key: []byte("6"), Value: []byte("val6")}
+	//l5 := Log{Key: []byte("7"), Value: []byte("val7")}
+	//l6 := Log{Key: []byte("12"), Value: []byte("val12")}
+	//l7 := Log{Key: []byte("8"), Value: []byte("val8")}
+	//l8 := Log{Key: []byte("30"), Value: []byte("val30")}
+	//l9 := Log{Key: []byte("7"), Value: []byte("val1117")}
+	//l10 := Log{Key: []byte("17"), Value: []byte("val17")}
+	//var t Tree
+	//t.Insert(l1)
+	//t.Insert(l2)
+	//t.Insert(l3)
+	//t.Insert(l4)
+	//t.Insert(l5)
+	//t.Insert(l6)
+	//t.Insert(l7)
+	//t.Insert(l8)
+	//t.Insert(l9)
+	//t.Insert(l10)
+	//----------------------------------------------------------------------------
+	//========================SSTABLE TESTS=======================================
 	// Test data for logs (assuming you have Log struct defined)
 	/*log1 := &Log{
 		CRC:       123,

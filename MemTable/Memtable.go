@@ -11,12 +11,12 @@ import (
 //kada se trashold popuni Flushujemo na disk --> SSTable
 
 type Memtable struct {
-	size        uint
+	size        uint32
 	trashold    float64
 	tableStruct IMemtableStruct
 }
 
-func GenerateMemtable(kapacitetStrukture uint, pragZaFlush float64, imeStrukture string) *Memtable {
+func GenerateMemtable(kapacitetStrukture uint32, pragZaFlush float64, imeStrukture string) *Memtable {
 	table := Memtable{size: kapacitetStrukture, trashold: pragZaFlush}
 	if imeStrukture == "btree" {
 		table.tableStruct = CreateTree()

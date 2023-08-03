@@ -54,7 +54,7 @@ func CRC32(data []byte) uint32 {
 	return crc32.ChecksumIEEE(data)
 }
 
-// kreiranje loga(pri unosu?)
+// kreiranje loga pri unosu
 func CreateLog(key []byte, value []byte) *Log {
 	log := Log{Key: key, Value: value, Tombstone: true, Timestamp: time.Now().Unix(), KeySize: KEY_SIZE_SIZE, ValueSize: VALUE_SIZE_SIZE}
 	log.CRC = CRC32(log.Value)
@@ -105,7 +105,7 @@ func ReadLog(file *os.File) (*Log, error) {
 		return nil, err
 	}
 	log.CRC = binary.LittleEndian.Uint32(crcBytes)
-	
+
 	// Read Timestamp
 	var timestampBytes = make([]byte, TIMESTAMP_SIZE)
 	_, err = file.Read(timestampBytes)
