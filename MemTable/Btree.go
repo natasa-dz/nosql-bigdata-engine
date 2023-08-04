@@ -4,8 +4,6 @@ import (
 	Log "NAiSP/Log"
 )
 
-const q int = 2
-
 // konstanta t je neki stepen ovog drveta koji se odredjuje iz konfiguracionog fajla
 //max broj kljuceva u cvoru: 2*q-1
 
@@ -18,11 +16,17 @@ type Node struct {
 type Tree struct {
 	root      *Node
 	numOfData uint
+	Degree    int
 }
 
-func CreateTree() *Tree {
-	t := Tree{root: nil, numOfData: 0}
+func CreateTree(Degree int) *Tree {
+	t := Tree{root: nil, numOfData: 0, Degree: Degree}
 	return &t
+}
+
+func (t *Tree) Empty() {
+	t.root = nil
+	t.numOfData = 0
 }
 
 func (t *Tree) GetNumOfElements() uint {
@@ -123,7 +127,7 @@ func (t *Tree) Insert(data Log.Log) {
 		t.numOfData = 1
 		return
 	}
-	if len(t.root.keys) == 2*q-1 { //koren je pun, znaci mora split pre daljeg nastavka
+	if len(t.root.keys) == 2*t.Degree-1 { //koren je pun, znaci mora split pre daljeg nastavka
 		t.root = t.root.splitCurrent(true, t.root)
 	}
 
@@ -132,7 +136,7 @@ func (t *Tree) Insert(data Log.Log) {
 	for x.leaf == false { //isto sto i while hahahah
 		index := x.getAppropriateChildIndex(string(data.Key))
 		y := x.children[index] //dete na kojem bi trebalo dalje dole da idemo prema listovima
-		if (len(y.keys)) == 2*q-1 {
+		if (len(y.keys)) == 2*t.Degree-1 {
 			x = y.splitCurrent(false, x) //ako je to dete puno mora prvo da se splituje pre nastavka spustanja
 			indexOfNextChild := x.getAppropriateChildIndex(string(data.Key))
 			x = x.children[indexOfNextChild] //onda biramo jedno od dva novonastala deteta (podelom y)

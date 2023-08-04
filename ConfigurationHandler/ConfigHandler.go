@@ -13,11 +13,12 @@ type ConfigHandler struct {
 	MemtableStruct string  `json:"MemtableStruct"`
 	SizeOfMemtable uint32  `json:"SizeOfMemtable"`
 	Trashold       float64 `json:"Trashold"`
+	NumOfFiles     string  `json:"NumOfFiles"`
 	//if memtable struct is btree
 	BTreeDegree uint32 `json:"BTreeDegree"`
 	//else struct == skipList
 
-	//------note: za sada se ne koristi tek kad uspostavim write bez ovoga...----------------
+	//------NOTE: za sada se ne koristi tek kad uspostavim write bez ovoga...----------------
 	CacheSize int `json:"CacheSize"`
 
 	TokenBucketSize        int `json:"TokenBucketSize"`
@@ -48,6 +49,6 @@ func UseCustomConfiguration() *ConfigHandler {
 }
 
 func UseDefaultConfiguration() *ConfigHandler {
-	config := ConfigHandler{MemtableStruct: "btree", SizeOfMemtable: 30, Trashold: 0.7, BTreeDegree: 2}
+	config := ConfigHandler{MemtableStruct: "btree", SizeOfMemtable: 30, Trashold: 0.7, BTreeDegree: 2, NumOfFiles: "multiple"}
 	return &config
 }

@@ -92,7 +92,7 @@ func main() {
 	logs := []*Log{log1, log2, log3, log4}
 	SortData(logs)
 	// Call writeToMultipleFiles function
-	//BuildSSTableMultiple(logs, 2, 1)	NOTE OBOO
+	//BuildSSTableMultiple(logs, 2, 1)
 
 	/*fmt.Println("Data written to multiple files successfully!")
 	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")

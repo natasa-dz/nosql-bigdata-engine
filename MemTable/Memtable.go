@@ -2,6 +2,7 @@ package MemTable
 
 import (
 	. "NAiSP/Log"
+	sstable "NAiSP/SSTable"
 	"sort"
 )
 
@@ -16,10 +17,10 @@ type Memtable struct {
 	tableStruct IMemtableStruct
 }
 
-func GenerateMemtable(kapacitetStrukture uint32, pragZaFlush float64, imeStrukture string) *Memtable {
+func GenerateMemtable(kapacitetStrukture uint32, pragZaFlush float64, imeStrukture string, stepenBStabla int) *Memtable {
 	table := Memtable{size: kapacitetStrukture, trashold: pragZaFlush}
 	if imeStrukture == "btree" {
-		table.tableStruct = CreateTree()
+		table.tableStruct = CreateTree(stepenBStabla)
 	} else {
 		//TODO treba da se inicijalizuje skip lista
 	}
@@ -36,14 +37,9 @@ func GenerateMemtable(kapacitetStrukture uint32, pragZaFlush float64, imeStruktu
 }*/
 
 func (table *Memtable) Flush(numOfFiles string) {
-	//TODO: Osmisliti sta ces sa generacijama gde ces ih cuvati(u onom write path delu kad budes pravio)
-	//unsortedData := table.tableStruct.GetAllLogs()
-	//sortedData := sortData(unsortedData)
-	if numOfFiles == "single" {
-		//TODO kreiraj SSTable pomocu single file
-	} else {
-		//TODO kreiraj SSTable pomocu multiple File
-	}
+	unsortedLogs := table.tableStruct.GetAllLogs()
+	SortedLogs := sortData(unsortedLogs)
+	sstable.BuildSSTable(SortedLogs, 0, 0, numOfFiles)
 }
 
 func sortData(entries []*Log) []*Log {
@@ -60,12 +56,16 @@ func (table *Memtable) TableFull() bool {
 	return false
 }
 
-func (table *Memtable) Insert(data Log) {
+func (table *Memtable) Insert(data Log, numOfFiles string) {
 	indexInNode, AddressOfNode := table.tableStruct.Search(string(data.Key))
 	if AddressOfNode != nil {
 		AddressOfNode.keys[indexInNode] = data
 	} else {
 		table.tableStruct.Insert(data)
+		if table.TableFull() {
+			table.Flush(numOfFiles)
+			table.tableStruct.Empty()
+		}
 	}
 }
 
@@ -80,4 +80,9 @@ func (table *Memtable) Search(key string) *Log {
 		return &nodeAdrress.keys[indexInNode]
 	}
 	return &Log{} //NOTE: OVO JE JAKO BITNO DA SE PROVERAVA NAKON SEARCHA UZ POMOC MEMTABLA!!!!
+}
+
+// dobavi poslednju generaciju i najveci level za pravljenje SSTabla
+func getLastGenAndLvl() {
+
 }
