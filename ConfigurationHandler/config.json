@@ -1,6 +1,6 @@
 {
   "MemtableStruct" : "btree",
-  "SizeOfMemtable" : 15,
+  "SizeOfMemtable" : 4,
   "Trashold" : 0.8,
   "BTreeDegree" : 3,
   "NumOfFiles": "single",

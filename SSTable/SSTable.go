@@ -29,7 +29,7 @@ type SSTable struct {
 }
 
 func BuildSSTable(sortedData []*Log, generation int, level int, sstableType string) {
-	if sstableType == "Single" {
+	if sstableType == "single" {
 		BuildSSTableSingle(sortedData, generation, level)
 		return
 	}

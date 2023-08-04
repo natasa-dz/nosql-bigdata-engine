@@ -3,7 +3,11 @@ package MemTable
 import (
 	. "NAiSP/Log"
 	sstable "NAiSP/SSTable"
+	"fmt"
+	"os"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 //trashold - granica/prag zapisa (< 100%)
@@ -39,7 +43,7 @@ func GenerateMemtable(kapacitetStrukture uint32, pragZaFlush float64, imeStruktu
 func (table *Memtable) Flush(numOfFiles string) {
 	unsortedLogs := table.tableStruct.GetAllLogs()
 	SortedLogs := sortData(unsortedLogs)
-	sstable.BuildSSTable(SortedLogs, 0, 0, numOfFiles)
+	sstable.BuildSSTable(SortedLogs, getLastGen(numOfFiles)+1, 1, numOfFiles)
 }
 
 func sortData(entries []*Log) []*Log {
@@ -83,6 +87,27 @@ func (table *Memtable) Search(key string) *Log {
 }
 
 // dobavi poslednju generaciju i najveci level za pravljenje SSTabla
-func getLastGenAndLvl() {
+func getLastGen(numOfFiles string) int {
+	nameOfDir := strings.ToUpper(string(numOfFiles[0])) + numOfFiles[1:]
+	files, err := os.ReadDir("Data/SStables/" + nameOfDir) //read all files from Single/Multiple
+	if err != nil {
+		fmt.Println("Err when reading last generation")
+	}
 
+	onlyTOCFiles := []string{} //will have names(Strings) of all TOC files
+	for _, file := range files {
+		if strings.HasPrefix(file.Name(), "TOC-") {
+			onlyTOCFiles = append(onlyTOCFiles, file.Name())
+		}
+	}
+
+	maxgen := 1
+	for _, fileName := range onlyTOCFiles {
+		parts := strings.Split(fileName, "-")
+		gen, _ := strconv.Atoi(parts[1])
+		if gen > maxgen {
+			maxgen = gen
+		}
+	}
+	return maxgen
 }
