@@ -10,11 +10,18 @@ import (
 )
 
 func WriteAppInitializationMenu() string {
+	var retVal string
 	fmt.Println("You started app. Do you want to use custom configuration, or you want to use configuration that we made?")
-	fmt.Println("Type \"custom\"/\"premade\"")
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	retVal := scanner.Text()
+	for true {
+		fmt.Println("Type \"custom\"/\"premade\"")
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		retVal = scanner.Text()
+		if strings.ToUpper(retVal) == "CUSTOM" || strings.ToUpper(retVal) == "PREMADE" {
+			break
+		}
+		fmt.Println("You did not enter valid option...")
+	}
 	return strings.ToUpper(retVal)
 }
 
