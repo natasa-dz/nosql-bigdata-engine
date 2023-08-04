@@ -39,6 +39,7 @@ var (
 //////////////////////////////////////////////////////////////////////
 
 // Function to create a new WAL
+// TODO: NEPOTREBNO????
 func CreateWALInstance(tombstone bool, key, value []byte) *log.Log {
 	crc := crc32.NewIEEE()
 
