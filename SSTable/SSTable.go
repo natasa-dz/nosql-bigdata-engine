@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"sort"
 	"strconv"
 )
 
@@ -139,15 +138,9 @@ func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation
 		*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt" + "\n"
 	}
 }
-func SortData(logs []*Log) {
-	sort.Slice(logs, func(i, j int) bool {
-		return string(logs[i].Key) < string(logs[j].Key)
-	})
-}
 
 // SINGLE FILE
-func BuildSSTableSingle(logs []*Log, generation int, level int) error {
-	SortData(logs)
+func BuildSSTableSingle(sortedLogs []*Log, generation int, level int) error {
 	header := Header{
 		LogsOffset:    32,
 		BloomOffset:   0,
@@ -156,18 +149,18 @@ func BuildSSTableSingle(logs []*Log, generation int, level int) error {
 
 	// Serialize the logs to bytes
 	var serializedLogs []byte
-	for _, log := range logs {
+	for _, log := range sortedLogs {
 		serializedLogs = append(serializedLogs, log.Serialize()...)
 	}
 	header.BloomOffset += header.LogsOffset + uint64(len(serializedLogs))
 
 	// Build Bloom Filter
-	filter := BuildFilter(logs, len(logs), 0.1)
+	filter := BuildFilter(sortedLogs, len(sortedLogs), 0.1)
 	filterSerialized := filter.Serialize()
 	header.IndexOffset += header.BloomOffset + uint64(filterSerialized.Len())
 
 	// Build Index
-	indexData := BuildIndex(logs, header.LogsOffset)
+	indexData := BuildIndex(sortedLogs, header.LogsOffset)
 	serializedIndex := SerializeIndexes(indexData)
 
 	// Build Summary
@@ -176,7 +169,7 @@ func BuildSSTableSingle(logs []*Log, generation int, level int) error {
 	header.SummaryOffset += header.IndexOffset + uint64(len(serializedIndex))
 
 	var FileContent = new(bytes.Buffer)
-	merkle := BuildMerkleTreeRoot(logs)
+	merkle := BuildMerkleTreeRoot(sortedLogs)
 	binary.Write(FileContent, binary.LittleEndian, header.HeaderSerialize())
 	binary.Write(FileContent, binary.LittleEndian, serializedLogs)
 	binary.Write(FileContent, binary.LittleEndian, filterSerialized.Bytes())
