@@ -1,10 +1,10 @@
 {
   "MemtableStruct" : "btree",
-  "SizeOfMemtable" : 4,
+  "SizeOfMemtable" : 10,
   "Trashold" : 0.8,
   "BTreeDegree" : 3,
   "NumOfFiles": "single",
-  "TokenBucketSize": 5,
-  "TokenBucketRefreshTime": 1000,
+  "TokenBucketSize": 2,
+  "TokenBucketRefreshTime": 10000,
   "CacheSize": 2
 }

@@ -16,8 +16,11 @@ type Application struct {
 	ConfigurationData *config.ConfigHandler
 	Memtable          *memtable.Memtable
 	WalFile           *os.File
-	TokenBucket       *bucket.TockenBucket
-	Cache             *cache.LRUCache
+	//fixme: probaj da izmajmunises da u memoriji(aplikaciji il tako negde) cuvas broj unetih, obrisanih i prepisanih
+	// rekorda(sve sto ce se upisati u wal) i onda kad to predje definisan config broj ti napravi novi wal i pisi tamo?
+	//todo: config u sebi treba da ima broj podataka po strani koji ce da prikazuje
+	TokenBucket *bucket.TockenBucket
+	Cache       *cache.LRUCache
 }
 
 func InitializeApp(choice string) *Application {

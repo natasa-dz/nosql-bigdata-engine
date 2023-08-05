@@ -1,16 +1,14 @@
 package main
 
 import (
-	. "NAiSP/Log"
+	application "NAiSP/Application"
 	. "NAiSP/Menu"
 )
 
 func main() {
-	//choiceOfConfig := WriteAppInitializationMenu()
-	//app := application.InitializeApp(choiceOfConfig)
-	//app.StartApp()
-	//TODO: testovi za token bucket sad novoizmenjeni
-	//TODO: testovi za cache sad novoizmenjeni
+	choiceOfConfig := WriteAppInitializationMenu()
+	app := application.InitializeApp(choiceOfConfig)
+	app.StartApp()
 	//TODO: testovi svega celog writepatha takvog(zajedno sa proverom jos jednom oko ispisa da li valja)
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
