@@ -2,7 +2,12 @@ package main
 
 import (
 	application "NAiSP/Application"
+	"NAiSP/BloomFilter"
+	. "NAiSP/Log"
 	. "NAiSP/Menu"
+	. "NAiSP/SSTable"
+	"fmt"
+	"os"
 )
 
 func main() {
@@ -10,6 +15,8 @@ func main() {
 	app := application.InitializeApp(choiceOfConfig)
 	app.StartApp()
 	//TODO: testovi svega celog writepatha takvog(zajedno sa proverom jos jednom oko ispisa da li valja)
+	//TODO: STA SE DESI U SCENARIU GDE: MEMTABLE VELICINA ZA FLUSH JE RECIMO 8 A MI NAPRAVIMO 6 UNOSA I UGASIMO, KOD NAS
+	//	SE U TOM SLUCAJU TI PODACI UPISUJU SAMO U WAL...DA LI PRI SLEDECEM POKRETANJU TREBA UCITATI TO IZ WALA ILI KRECES OD 0?
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}
@@ -163,7 +170,7 @@ func main() {
 		fmt.Println("Error writing to a single file:", err)
 		return
 	}*/
-	/*file, err := os.Open("./Data/SSTables/Single/Data-1-2.bin")
+	file, err := os.Open("./Data/SSTables/Single/Data-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -203,7 +210,7 @@ func main() {
 		fmt.Println(indexEntries[i].Offset)
 	}
 
-	defer file.Close()*/
+	defer file.Close()
 
 	//SizeTieredCompaction(1, "Single")*/
 }

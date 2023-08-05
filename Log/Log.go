@@ -50,14 +50,26 @@ type Log struct {
 }
 
 // fja koja ce da vrati CRC jednog Log-a
-func CRC32(data []byte) uint32 {
-	return crc32.ChecksumIEEE(data)
+func CRC32(log *Log) uint32 {
+	// Create a new CRC32 hash instance
+	crc32Hash := crc32.NewIEEE()
+
+	// Write relevant fields to the hash
+	crc32Hash.Write(Int64ToBytes(log.Timestamp))
+	crc32Hash.Write(BoolToBytes(log.Tombstone))
+	crc32Hash.Write(Int64ToBytes(log.KeySize))
+	crc32Hash.Write(Int64ToBytes(log.ValueSize))
+	crc32Hash.Write(log.Key)
+	crc32Hash.Write(log.Value)
+
+	// Calculate and return the CRC32 value
+	return crc32Hash.Sum32()
 }
 
 // kreiranje loga pri unosu
 func CreateLog(key []byte, value []byte) *Log {
-	log := Log{Key: key, Value: value, Tombstone: true, Timestamp: time.Now().Unix(), KeySize: KEY_SIZE_SIZE, ValueSize: VALUE_SIZE_SIZE}
-	log.CRC = CRC32(log.Value)
+	log := Log{Key: key, Value: value, Tombstone: true, Timestamp: time.Now().Unix(), KeySize: int64(len(key)), ValueSize: int64(len(value))}
+	log.CRC = CRC32(&log)
 	return &log
 }
 
