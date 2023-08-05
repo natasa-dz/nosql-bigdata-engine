@@ -14,7 +14,7 @@ func main() {
 	choiceOfConfig := WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
 	app.StartApp()
-	//TODO: testovi svega celog writepatha takvog(zajedno sa proverom jos jednom oko ispisa da li valja)
+	//TODO: testovi svega celog writepatha takvog(zajedno sa proverom jos jednom oko ispisak da li valja)
 	//TODO: STA SE DESI U SCENARIU GDE: MEMTABLE VELICINA ZA FLUSH JE RECIMO 8 A MI NAPRAVIMO 6 UNOSA I UGASIMO, KOD NAS
 	//	SE U TOM SLUCAJU TI PODACI UPISUJU SAMO U WAL...DA LI PRI SLEDECEM POKRETANJU TREBA UCITATI TO IZ WALA ILI KRECES OD 0?
 	//============================MENU TESTS======================

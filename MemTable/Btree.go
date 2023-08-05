@@ -186,6 +186,7 @@ func (t *Tree) Traverse(node *Node) []*Node {
 		for i := 0; i != len(node.children); i++ {
 			retVal = append(retVal, t.Traverse(node.children[i])...)
 		}
+		break
 	}
 
 	retVal = append(retVal, node)
