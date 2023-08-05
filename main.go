@@ -29,6 +29,8 @@ func main() {
 	//LIST_RANGESCAN_PaginationResponse(slice)
 	//------------------------------------------------------------------------------
 	//=======================BTREE TESTS==========================================
+	//NOTE: these tests might not be valid anymore, cause search for duplicate is moved to memtable.go it is not
+	//	in btree.go anymore so it might give errors when inserting duplicates
 	//l1 := Log{Key: []byte("10"), Value: []byte("val10")}
 	//l2 := Log{Key: []byte("20"), Value: []byte("val20")}
 	//l3 := Log{Key: []byte("5"), Value: []byte("val5")}

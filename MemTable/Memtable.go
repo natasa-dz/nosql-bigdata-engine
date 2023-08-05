@@ -60,12 +60,12 @@ func (table *Memtable) TableFull() bool {
 	return false
 }
 
-func (table *Memtable) Insert(data Log, numOfFiles string) {
+func (table *Memtable) Insert(data *Log, numOfFiles string) {
 	indexInNode, AddressOfNode := table.tableStruct.Search(string(data.Key))
 	if AddressOfNode != nil {
-		AddressOfNode.keys[indexInNode] = data
+		AddressOfNode.keys[indexInNode] = *data
 	} else {
-		table.tableStruct.Insert(data)
+		table.tableStruct.Insert(*data)
 		if table.TableFull() {
 			table.Flush(numOfFiles)
 			table.tableStruct.Empty()

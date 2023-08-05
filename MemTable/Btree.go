@@ -116,11 +116,6 @@ func (node *Node) splitCurrent(root bool, parent *Node) *Node {
 }
 
 func (t *Tree) Insert(data Log.Log) {
-	indexInNode, nodePointer := t.Search(string(data.Key)) //pretrazi stablo da vidis da li ga sadrzi, ako sadrzi == samo update
-	if indexInNode != -1 {
-		nodePointer.keys[indexInNode].Value = data.Value
-		return
-	}
 
 	if t.root == nil { //postavljas koren == bice u prvoj iteraciji
 		t.root = &Node{leaf: true, keys: []Log.Log{data}}
