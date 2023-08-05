@@ -6,5 +6,5 @@
   "NumOfFiles": "single",
   "TokenBucketSize": 5,
   "TokenBucketRefreshTime": 1000,
-  "CacheSize": 5
+  "CacheSize": 2
 }

@@ -221,3 +221,7 @@ func paginationMenu() string {
 	retVal := scanner.Text()
 	return retVal
 }
+
+func OutOfTokensNotification() {
+	fmt.Println("You made to many requests at once. Please try again some time soon!")
+}

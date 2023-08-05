@@ -9,7 +9,9 @@ func main() {
 	choiceOfConfig := WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
 	app.StartApp()
-
+	//todo: testovi za token bucket sad novoizmenjeni
+	//todo: testovi za cache sad novoizmenjeni
+	//todo: testovi svega celog writepatha takvog(zajedno sa proverom jos jednom oko ispisa da li valja)
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}

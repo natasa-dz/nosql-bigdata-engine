@@ -10,10 +10,8 @@ azurira ili cita on ce doci na pocetak ovog reda. Podatak se alocira i pre nego 
 da kod sledece pretrage MOZDA prvo ne moramo traziti po disku(bio on alociran za brisanje, citanje ili ako se tek upisuje)
 */
 
-//TODO jedna nejasnoca: svi su implementirali da lista sadrzi (key, value), a mapa [key] = adresa gde je (key, value) u listi,
-//	pitanje je cemu to jer nam onda key ne treba u listi, imamo ga u mapi???
-
 import (
+	. "NAiSP/Log"
 	"container/list"
 )
 
@@ -23,30 +21,24 @@ type LRUCache struct {
 	list  *list.List               //dvostruko spregnuta lista, bice prikaz tog reda ustv(sadrzace elemente(parove) koji se sastoje od kljuca i vrednosti)
 }
 
-type Elem struct {
-	key   string
-	value []byte
-}
-
-func CreateCache(size int) LRUCache {
+func CreateCache(size int) *LRUCache {
 	cache := LRUCache{size, map[string]*list.Element{}, list.New()}
-	return cache
+	return &cache
 }
 
-func (cache *LRUCache) Insert(newValue []byte, key string) {
-	adrOfExistingElem, ok := cache.cache[key]
+func (cache *LRUCache) Insert(newLog *Log) {
+	adrOfExistingElem, ok := cache.cache[string(newLog.Key)]
 	if ok { //element je vec u catchu
-		cache.list.MoveToFront(adrOfExistingElem)        //posto je nesto radjeno sa njime pomeri ga na 'pocetak' kao najskorije koriscen elem
-		adrOfExistingElem.Value.(*Elem).value = newValue //azuriraj vrednost posto je insert u pitanju
+		cache.list.MoveToFront(adrOfExistingElem)           //posto je nesto radjeno sa njime pomeri ga na 'pocetak' kao najskorije koriscen elem
+		adrOfExistingElem.Value.(*Log).Value = newLog.Value //azuriraj vrednost posto je insert u pitanju
 	} else { //elemen nije u catchu
 		if cache.list.Len() == cache.n { //catch je pun u ovom trenutku
-			keyToRemove := cache.list.Back().Value.(*Elem).key
-			cache.list.Remove(cache.list.Back()) //izbaci ga iz liste
-			delete(cache.cache, keyToRemove)     //izbaci ga iz mape
+			keyToRemove := cache.list.Back().Value.(*Log).Key
+			cache.list.Remove(cache.list.Back())     //izbaci ga iz liste
+			delete(cache.cache, string(keyToRemove)) //izbaci ga iz mape
 		}
-		newElem := &Elem{key, newValue}
-		adrOfNewElem := cache.list.PushFront(newElem) //novokreirani element ubaci u listu na 'pocetak'
-		cache.cache[key] = adrOfNewElem               //ubaci ga u mapu
+		adrOfNewElem := cache.list.PushFront(newLog)   //novokreirani element ubaci u listu na 'pocetak'
+		cache.cache[string(newLog.Key)] = adrOfNewElem //ubaci ga u mapu
 	}
 }
 
@@ -55,7 +47,7 @@ func (cache *LRUCache) Search(key string) []byte {
 	adrOfExistingElem, ok := cache.cache[key]
 	if ok {
 		cache.list.MoveToFront(adrOfExistingElem)
-		return adrOfExistingElem.Value.(*Elem).value
+		return adrOfExistingElem.Value.(*Log).Value
 	}
 	return nil
 }

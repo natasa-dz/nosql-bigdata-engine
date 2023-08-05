@@ -16,11 +16,8 @@ type ConfigHandler struct {
 	NumOfFiles     string  `json:"NumOfFiles"`
 	//if memtable struct is btree
 	BTreeDegree uint32 `json:"BTreeDegree"`
-	//else struct == skipList
-
-	//------NOTE: za sada se ne koristi tek kad uspostavim write bez ovoga...----------------
-	CacheSize int `json:"CacheSize"`
-
+	//else struct == skipList(onda mi trebaju elementi za skiplist kao sto za btree imam njegov degree
+	CacheSize              int `json:"CacheSize"`
 	TokenBucketSize        int `json:"TokenBucketSize"`
 	TokenBucketRefreshTime int `json:"TokenBucketRefreshTime"`
 }
@@ -49,6 +46,7 @@ func UseCustomConfiguration() *ConfigHandler {
 }
 
 func UseDefaultConfiguration() *ConfigHandler {
-	config := ConfigHandler{MemtableStruct: "btree", SizeOfMemtable: 30, Trashold: 0.7, BTreeDegree: 2, NumOfFiles: "multiple"}
+	config := ConfigHandler{MemtableStruct: "btree", SizeOfMemtable: 30, Trashold: 0.7, BTreeDegree: 2, NumOfFiles: "multiple",
+		TokenBucketSize: 3, TokenBucketRefreshTime: 10000, CacheSize: 4}
 	return &config
 }
