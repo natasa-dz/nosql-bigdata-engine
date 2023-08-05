@@ -28,7 +28,7 @@ func InitializeApp(choice string) *Application {
 		app = Application{ConfigurationData: config.UseDefaultConfiguration()}
 	}
 	app.Memtable = memtable.GenerateMemtable(app.ConfigurationData.SizeOfMemtable, app.ConfigurationData.Trashold, app.ConfigurationData.MemtableStruct, int(app.ConfigurationData.BTreeDegree))
-	app.WalFile, _ = wal.CreateNewWAL() //todo: resiti stvari koje treba kroz konfiguraciju da se gledaju sto se tice wal-a
+	app.WalFile, _ = wal.CreateNewWAL() //TODO: resiti stvari koje treba kroz konfiguraciju da se gledaju sto se tice wal-a
 	app.TokenBucket = bucket.CreateBucket(app.ConfigurationData.TokenBucketSize, time.Duration(app.ConfigurationData.TokenBucketRefreshTime))
 	app.Cache = cache.CreateCache(app.ConfigurationData.CacheSize)
 	return &app

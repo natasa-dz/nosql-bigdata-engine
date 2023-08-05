@@ -1,17 +1,17 @@
 package main
 
 import (
-	application "NAiSP/Application"
+	. "NAiSP/Log"
 	. "NAiSP/Menu"
 )
 
 func main() {
-	choiceOfConfig := WriteAppInitializationMenu()
-	app := application.InitializeApp(choiceOfConfig)
-	app.StartApp()
-	//todo: testovi za token bucket sad novoizmenjeni
-	//todo: testovi za cache sad novoizmenjeni
-	//todo: testovi svega celog writepatha takvog(zajedno sa proverom jos jednom oko ispisa da li valja)
+	//choiceOfConfig := WriteAppInitializationMenu()
+	//app := application.InitializeApp(choiceOfConfig)
+	//app.StartApp()
+	//TODO: testovi za token bucket sad novoizmenjeni
+	//TODO: testovi za cache sad novoizmenjeni
+	//TODO: testovi svega celog writepatha takvog(zajedno sa proverom jos jednom oko ispisa da li valja)
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}
@@ -24,9 +24,11 @@ func main() {
 	//l9 := Log{Key: []byte("key9"), Value: []byte("val")}
 	//l10 := Log{Key: []byte("key10"), Value: []byte("val")}
 	//l11 := Log{Key: []byte("key11"), Value: []byte("val")}
+	//l12 := Log{Key: []byte("key12"), Value: []byte("val")}
+	//l13 := Log{Key: []byte("key13"), Value: []byte("val")}
 	//
-	//slice := []*Log{&l1, &l2, &l3, &l4, &l5, &l6, &l7, &l8, &l9, &l10, &l11}
-	//LIST_RANGESCAN_PaginationResponse(slice)
+	//slice := []*Log{&l1, &l2, &l3, &l4, &l5, &l6, &l7, &l8, &l9, &l10, &l11, &l12, &l13}
+	//LIST_RANGESCAN_PaginationResponse(slice, 4)
 	//------------------------------------------------------------------------------
 	//=======================BTREE TESTS==========================================
 	//NOTE: these tests might not be valid anymore, cause search for duplicate is moved to memtable.go it is not

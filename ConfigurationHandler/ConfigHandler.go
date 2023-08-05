@@ -10,6 +10,8 @@ import (
 const configFilePath = "ConfigurationHandler/config.json"
 
 type ConfigHandler struct {
+	//WalSegmentSize --> velicina wal00001.log fajla
+
 	MemtableStruct string  `json:"MemtableStruct"`
 	SizeOfMemtable uint32  `json:"SizeOfMemtable"`
 	Trashold       float64 `json:"Trashold"`
