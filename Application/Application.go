@@ -16,10 +16,9 @@ type Application struct {
 	ConfigurationData *config.ConfigHandler
 	Memtable          *memtable.Memtable
 	WalFile           *os.File
-	//todo: config u sebi treba da ima broj podataka po strani koji ce da prikazuje
-	TokenBucket     *bucket.TockenBucket
-	Cache           *cache.LRUCache
-	NumOfWalInserts int //brojcanik za koliko smo logova bacili u 1 wal
+	TokenBucket       *bucket.TockenBucket
+	Cache             *cache.LRUCache
+	NumOfWalInserts   int //brojcanik za koliko smo logova bacili u 1 wal
 }
 
 func InitializeApp(choice string) *Application {

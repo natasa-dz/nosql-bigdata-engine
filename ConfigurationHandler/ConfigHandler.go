@@ -10,7 +10,6 @@ import (
 const configFilePath = "ConfigurationHandler/config.json"
 
 type ConfigHandler struct {
-	//WalSegmentSize --> velicina wal00001.log fajla
 	NumOfWalSegmentLogs int     `json:"NumOfWalSegmentLogs"`
 	MemtableStruct      string  `json:"MemtableStruct"`
 	SizeOfMemtable      uint32  `json:"SizeOfMemtable"`
@@ -22,6 +21,7 @@ type ConfigHandler struct {
 	CacheSize              int `json:"CacheSize"`
 	TokenBucketSize        int `json:"TokenBucketSize"`
 	TokenBucketRefreshTime int `json:"TokenBucketRefreshTime"`
+	MenuPaginationSize     int `json:"MenuPaginationSize"`
 }
 
 func UseCustomConfiguration() *ConfigHandler {
@@ -48,7 +48,7 @@ func UseCustomConfiguration() *ConfigHandler {
 }
 
 func UseDefaultConfiguration() *ConfigHandler {
-	config := ConfigHandler{MemtableStruct: "btree", SizeOfMemtable: 30, Trashold: 0.7, BTreeDegree: 2, NumOfFiles: "multiple",
-		TokenBucketSize: 3, TokenBucketRefreshTime: 10000, CacheSize: 4}
+	config := ConfigHandler{NumOfWalSegmentLogs: 5, MemtableStruct: "btree", SizeOfMemtable: 30, Trashold: 0.7, BTreeDegree: 2, NumOfFiles: "multiple",
+		TokenBucketSize: 3, TokenBucketRefreshTime: 10000, CacheSize: 4, MenuPaginationSize: 3}
 	return &config
 }

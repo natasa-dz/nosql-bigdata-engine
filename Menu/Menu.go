@@ -224,9 +224,6 @@ func printPage(results []*Log, numOfPage int) {
 	fmt.Println("============================================")
 }
 
-// todo: moram ispraviti ova paginacija ne valja jer treba da primi velicinu stranice koju ce da prikaze i samu stranicu
-//
-//	koju ce kao da prikaze u zahtevu na pocetku vljd jbm li ga
 func paginationMenu(totalNumOfPages int) string {
 	var input string
 	for true {

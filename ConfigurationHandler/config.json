@@ -7,5 +7,6 @@
   "NumOfFiles": "single",
   "TokenBucketSize": 2,
   "TokenBucketRefreshTime": 10000,
-  "CacheSize": 2
+  "CacheSize": 2,
+  "MenuPaginationSize": 5
 }
