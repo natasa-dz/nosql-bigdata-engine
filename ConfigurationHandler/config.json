@@ -2,7 +2,7 @@
   "NumOfWalSegmentLogs": 4,
   "NumOfSummarySegmentLogs": 3,
   "MemtableStruct" : "btree",
-  "SizeOfMemtable" : 8,
+  "SizeOfMemtable" : 4,
   "Trashold" : 0.8,
   "BTreeDegree" : 2,
   "NumOfFiles": "single",

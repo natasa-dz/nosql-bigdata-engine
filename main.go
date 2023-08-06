@@ -100,27 +100,27 @@ func main() {
 	}
 
 	logs := []*Log{log1, log2, log3, log4}
-	SortData(logs)
+	SortData(logs)*/
 	// Call writeToMultipleFiles function
 	//BuildSSTableMultiple(logs, 2, 1)
 
-	/*fmt.Println("Data written to multiple files successfully!")
-	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")
+	fmt.Println("Data written to multiple files successfully!")
+	file, err := os.Open("./Data/SSTables/Multiple/Bloom-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	file2, err := os.Open("./Data/SSTables/Multiple/Data-1-2.bin")
+	file2, err := os.Open("./Data/SSTables/Multiple/Data-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	file3, err := os.Open("./Data/SSTables/Multiple/Index-1-2.bin")
+	file3, err := os.Open("./Data/SSTables/Multiple/Index-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	file4, err := os.Open("./Data/SSTables/Multiple/Summary-1-2.bin")
+	file4, err := os.Open("./Data/SSTables/Multiple/Summary-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -132,6 +132,7 @@ func main() {
 	data, _ = ReadLogs(file2, 0, uint64(offsetEnd))
 	for i := 0; i < len(data); i++ {
 		fmt.Println(string(data[i].Key))
+		fmt.Println(string(data[i].Value))
 	}
 	//Bloom test
 	bloom := BloomFilter.ReadBloom(file, 0)
@@ -162,14 +163,14 @@ func main() {
 	defer file.Close()
 	defer file2.Close()
 	defer file3.Close()
-	defer file4.Close()*/
+	defer file4.Close()
 	// Call writeToSingleFile function
 	/*err := BuildSSTableSingle(logs, 2, 1)
 	if err != nil {
 		fmt.Println("Error writing to a single file:", err)
 		return
 	}*/
-	file, err := os.Open("./Data/SSTables/Single/Data-2-1.bin")
+	/*file, err := os.Open("./Data/SSTables/Single/Data-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -213,7 +214,7 @@ func main() {
 		fmt.Println(indexEntries[i].Offset)
 	}
 
-	defer file.Close()
+	defer file.Close()*/
 
 	//SizeTieredCompaction(1, "Single")*/
 }
