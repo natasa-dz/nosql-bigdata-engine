@@ -79,9 +79,10 @@ func CreateWALInstance(tombstone bool, key, value []byte) *log.Log {
 }
 
 // Function to create a new WAL file and return its file handle
-func CreateNewWAL() (*os.File, error) {
+func CreateNewWAL(numOfFiles string) (*os.File, error) {
 	// Get the list of existing WAL files to find the next available offset
-	files, err := os.ReadDir("Data/wal/")
+	numOfFiles = strings.Title(numOfFiles)
+	files, err := os.ReadDir("Data/Wal/" + numOfFiles + "/")
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func CreateNewWAL() (*os.File, error) {
 	}
 
 	// Generate the new WAL filename based on the offset
-	newFilename := fmt.Sprintf("Data/wal/wal_%04d.log", nextOffset)
+	newFilename := fmt.Sprintf("Data/Wal/"+numOfFiles+"/wal_%04d.log", nextOffset)
 
 	// Create or open the new WAL file
 	newFile, err := os.OpenFile(newFilename, os.O_CREATE|os.O_RDWR, 0777)
@@ -114,7 +115,7 @@ func CreateNewWAL() (*os.File, error) {
 
 // Function to delete old segments from the WAL directory
 func deleteSegments(lowWaterMark int) error {
-	files, err := os.ReadDir("wal/")
+	files, err := os.ReadDir("Wal/")
 	if err != nil {
 		return err
 	}
@@ -136,7 +137,7 @@ func deleteSegments(lowWaterMark int) error {
 
 	// Delete the segments
 	for _, file := range segmentsToDelete {
-		filename := "wal/" + file.Name()
+		filename := "Wal/" + file.Name()
 		err := os.Remove(filename)
 		if err != nil {
 			return err
@@ -145,14 +146,14 @@ func deleteSegments(lowWaterMark int) error {
 	}
 
 	// Rename the remaining segments to adjust offset numbers
-	files, err = os.ReadDir("wal/")
+	files, err = os.ReadDir("Wal/")
 	if err != nil {
 		return err
 	}
 
 	for i, file := range files {
-		filename := "wal/" + file.Name()
-		newFilename := "wal/wal_" + fmt.Sprintf("%04d", i+1) + ".log"
+		filename := "Wal/" + file.Name()
+		newFilename := "Wal/wal_" + fmt.Sprintf("%04d", i+1) + ".log"
 		err := os.Rename(filename, newFilename)
 		if err != nil {
 			return err
@@ -329,9 +330,9 @@ func ReadWal(walFile *os.File) ([]*log.Log, error) {
 }
 
 /*func main() {
-	err := os.Mkdir("wal", 0777)
+	err := os.Mkdir("Wal", 0777)
 	if err != nil && !os.IsExist(err) {
-		log.Fatal("Failed to create 'wal' folder:", err)
+		log.Fatal("Failed to create 'Wal' folder:", err)
 	}
 
 	// Create a new WAL instance
