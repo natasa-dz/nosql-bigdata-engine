@@ -1,0 +1,12 @@
+{
+  "NumOfWalSegmentLogs": broj logova u jednom wal.log file pre nego sto se napravi novi wal.log file u aplikaciji
+  "MemtableStruct" : struktura koja ce se koristiti za memtable
+  "SizeOfMemtable" : max velicina strukture(broj logova u strukturi)
+  "Trashold" : procenat popunjenosti memtable strukture koji kada se predje desava se flush
+  "BTreeDegree" : [SAMO AKO JE  "MemtableStruct"==BTREE] Stepen B stabla(2*stepen-1 je max broj kljuceva u cvoru stabla)
+  "NumOfFiles": dal ce biti single ili multiple file konstrukcija
+  "TokenBucketSize": broj tokena koji neko ima za zahteve
+  "TokenBucketRefreshTime": vreme koje treba da prodje za reset br tokena...ne znam u kojoj meri je izrazeno!!!
+  "CacheSize": velicina cache strukture
+  "MenuPaginationSize": u slucaju puno rezultata ovo ce biti broj logova koji ce se prikazivati po stranici u meniju
+}
