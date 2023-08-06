@@ -15,7 +15,7 @@ type Summary struct {
 	Entries      []*IndexEntry
 }
 
-func BuildSummary(data []*IndexEntry, indexOffset uint64) *bytes.Buffer {
+func BuildSummary(data []*IndexEntry, indexOffset uint64, SUMMARY_BLOCK_SIZE int) *bytes.Buffer {
 	var SummaryContent = new(bytes.Buffer)
 	var offset = indexOffset
 	WriteSummaryHeaderSingle(data, SummaryContent) //u summary ce ispisati prvi i poslednji kljuc iz indexa

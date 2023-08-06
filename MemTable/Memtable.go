@@ -31,19 +31,10 @@ func GenerateMemtable(kapacitetStrukture uint32, pragZaFlush float64, imeStruktu
 	return &table
 }
 
-/*func (table *Memtable) Flush() {
-	//size ce ici na 0 (ako planiramo da ih rotiramo, lakse ih je obrisati i uzeti sledeci iz liste)
-	//treba da iz strukture uzmes i sortiras kljuceve
-	//tako sortirane treba da uzmes i ubacis ih u SSTable
-	//zatim treba da ga obrises
-	//NAPOMENA: U VECOJ APSTRAKCIJI (WRITE PATH) TREBA DA IMAMO LISTU PRAZNIH MEMTABLOVA I KAKO SE JEDAN POPUNI TAKO SE TAJ FLUSHUJE I BRISE,
-		//SLEDECI KRECE DA SE PUNI I TAKODJE SE PRAVI I JEDAN PRAZAN DA NE BI LISTA OSTALA BEZ MEMTABLOVA U JEDNOM MOMENTU
-}*/
-
-func (table *Memtable) Flush(numOfFiles string) {
+func (table *Memtable) Flush(numOfFiles string, summaryBlockSize int) {
 	unsortedLogs := table.tableStruct.GetAllLogs()
 	SortedLogs := sortData(unsortedLogs)
-	sstable.BuildSSTable(SortedLogs, getLastGen(numOfFiles)+1, 1, numOfFiles)
+	sstable.BuildSSTable(SortedLogs, getLastGen(numOfFiles)+1, 1, numOfFiles, summaryBlockSize)
 }
 
 func sortData(entries []*Log) []*Log {
@@ -60,14 +51,14 @@ func (table *Memtable) TableFull() bool {
 	return false
 }
 
-func (table *Memtable) Insert(data *Log, numOfFiles string) {
+func (table *Memtable) Insert(data *Log, numOfFiles string, summaryBlockSize int) {
 	indexInNode, AddressOfNode := table.tableStruct.Search(string(data.Key))
 	if AddressOfNode != nil {
 		AddressOfNode.keys[indexInNode] = *data
 	} else {
 		table.tableStruct.Insert(*data)
 		if table.TableFull() {
-			table.Flush(numOfFiles)
+			table.Flush(numOfFiles, summaryBlockSize)
 			table.tableStruct.Empty()
 		}
 	}

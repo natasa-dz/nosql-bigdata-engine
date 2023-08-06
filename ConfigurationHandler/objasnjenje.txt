@@ -9,4 +9,5 @@
   "TokenBucketRefreshTime": vreme koje treba da prodje za reset br tokena...ne znam u kojoj meri je izrazeno!!!
   "CacheSize": velicina cache strukture
   "MenuPaginationSize": u slucaju puno rezultata ovo ce biti broj logova koji ce se prikazivati po stranici u meniju
+  "NumOfSummarySegmentLogs": na svaki ovaj broj ce ici po jedan zapis u summary - u varijanti (kljuc:offset u index fajlu)
 }

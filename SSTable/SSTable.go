@@ -13,9 +13,9 @@ import (
 	"strconv"
 )
 
-const (
-	SUMMARY_BLOCK_SIZE = 10
-)
+//const (
+//	SUMMARY_BLOCK_SIZE = 10
+//)
 
 type SSTable struct {
 	Header     Header
@@ -28,12 +28,12 @@ type SSTable struct {
 	Metadata MerkleRoot
 }
 
-func BuildSSTable(sortedData []*Log, generation int, level int, sstableType string) {
+func BuildSSTable(sortedData []*Log, generation int, level int, sstableType string, summaryBlockSize int) {
 	if sstableType == "single" {
-		BuildSSTableSingle(sortedData, generation, level)
+		BuildSSTableSingle(sortedData, generation, level, summaryBlockSize)
 		return
 	}
-	BuildSSTableMultiple(sortedData, generation, level)
+	BuildSSTableMultiple(sortedData, generation, level, summaryBlockSize)
 }
 
 func GetAllLogs(file *os.File, sstableType string) ([]*Log, error) {
@@ -59,7 +59,7 @@ func GetAllLogs(file *os.File, sstableType string) ([]*Log, error) {
 }
 
 // MULTIPLE:
-func BuildSSTableMultiple(sortedData []*Log, generation int, level int) {
+func BuildSSTableMultiple(sortedData []*Log, generation, level, SUMMARY_BLOCK_SIZE int) {
 	//cetri bafera za cetri razlicita fajla
 	var FilterContent = new(bytes.Buffer)
 	var DataContent = new(bytes.Buffer)
@@ -140,7 +140,7 @@ func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation
 }
 
 // SINGLE FILE
-func BuildSSTableSingle(sortedLogs []*Log, generation int, level int) error {
+func BuildSSTableSingle(sortedLogs []*Log, generation, level, SUMMARY_BLOCK_SIZE int) error {
 	header := Header{
 		LogsOffset:    32,
 		BloomOffset:   0,
@@ -164,7 +164,7 @@ func BuildSSTableSingle(sortedLogs []*Log, generation int, level int) error {
 	serializedIndex := SerializeIndexes(indexData)
 
 	// Build Summary
-	summary := BuildSummary(indexData, header.IndexOffset)
+	summary := BuildSummary(indexData, header.IndexOffset, SUMMARY_BLOCK_SIZE)
 	summarySerialized := summary.Bytes()
 	header.SummaryOffset += header.IndexOffset + uint64(len(serializedIndex))
 

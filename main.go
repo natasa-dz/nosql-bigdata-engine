@@ -2,7 +2,12 @@ package main
 
 import (
 	application "NAiSP/Application"
+	"NAiSP/BloomFilter"
+	. "NAiSP/Log"
 	. "NAiSP/Menu"
+	. "NAiSP/SSTable"
+	"fmt"
+	"os"
 )
 
 func main() {
@@ -164,12 +169,13 @@ func main() {
 		fmt.Println("Error writing to a single file:", err)
 		return
 	}*/
-	/*file, err := os.Open("./Data/SSTables/Single/Data-2-1.bin")
+	file, err := os.Open("./Data/SSTables/Single/Data-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
 	//Logs test
+	fmt.Println("LOGS TEST")
 	var data []*Log
 	header, _ := ReadHeader(file)
 	data, _ = ReadLogs(file, int64(header.LogsOffset), header.BloomOffset)
@@ -180,6 +186,7 @@ func main() {
 	}
 
 	//Bloom test
+	fmt.Println("BLOOM TEST")
 	bloom := BloomFilter.ReadBloom(file, int64(header.BloomOffset))
 	fmt.Println(bloom.BitSlices)
 	fmt.Println(bloom.M)
@@ -188,6 +195,7 @@ func main() {
 	fmt.Println(int64(header.SummaryOffset))
 
 	//Summary test
+	fmt.Println("SUMMARY TEST")
 	summary, _ := ReadSummary(file, int64(header.SummaryOffset))
 
 	fmt.Println(summary.StartKey)
@@ -197,6 +205,7 @@ func main() {
 		fmt.Println(summary.Entries[i].Offset)
 	}
 	//Index test
+	fmt.Println("INDEX TEST")
 	indexEntries, _ := ReadIndex(file, int64(header.IndexOffset), int64(header.SummaryOffset))
 
 	for i := 0; i < len(indexEntries); i++ {
@@ -205,6 +214,6 @@ func main() {
 	}
 
 	defer file.Close()
-	*/
+
 	//SizeTieredCompaction(1, "Single")*/
 }

@@ -10,11 +10,12 @@ import (
 const configFilePath = "ConfigurationHandler/config.json"
 
 type ConfigHandler struct {
-	NumOfWalSegmentLogs int     `json:"NumOfWalSegmentLogs"`
-	MemtableStruct      string  `json:"MemtableStruct"`
-	SizeOfMemtable      uint32  `json:"SizeOfMemtable"`
-	Trashold            float64 `json:"Trashold"`
-	NumOfFiles          string  `json:"NumOfFiles"`
+	NumOfWalSegmentLogs     int     `json:"NumOfWalSegmentLogs"`
+	NumOfSummarySegmentLogs int     `json:"NumOfSummarySegmentLogs"`
+	MemtableStruct          string  `json:"MemtableStruct"`
+	SizeOfMemtable          uint32  `json:"SizeOfMemtable"`
+	Trashold                float64 `json:"Trashold"`
+	NumOfFiles              string  `json:"NumOfFiles"`
 	//if memtable struct is btree
 	BTreeDegree uint32 `json:"BTreeDegree"`
 	//else struct == skipList(onda mi trebaju elementi za skiplist kao sto za btree imam njegov degree
@@ -48,7 +49,7 @@ func UseCustomConfiguration() *ConfigHandler {
 }
 
 func UseDefaultConfiguration() *ConfigHandler {
-	config := ConfigHandler{NumOfWalSegmentLogs: 5, MemtableStruct: "btree", SizeOfMemtable: 30, Trashold: 0.7, BTreeDegree: 2, NumOfFiles: "multiple",
+	config := ConfigHandler{NumOfWalSegmentLogs: 5, NumOfSummarySegmentLogs: 10, MemtableStruct: "btree", SizeOfMemtable: 30, Trashold: 0.7, BTreeDegree: 2, NumOfFiles: "multiple",
 		TokenBucketSize: 3, TokenBucketRefreshTime: 10000, CacheSize: 4, MenuPaginationSize: 3}
 	return &config
 }
