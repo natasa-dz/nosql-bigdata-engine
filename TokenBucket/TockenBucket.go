@@ -6,27 +6,29 @@ import (
 
 //struktura koja sprecava da se baci milion zahteva u sekundi vec lupam smemo da posaljemo 5 zahteva kroz minut i vise od toga nam ne dozvoljava
 
-const n = 5                     //broj tokena max dozvoljenih, ucitati iz konfiguracionog fajla
-const timeToReset = time.Minute //vremenski period na koji ce se broj tokena resetovati, isto iz konfiguracionog
+//broj tokena max dozvoljenih, ucitati iz konfiguracionog fajla
+//vremenski period na koji ce se broj tokena resetovati, isto iz konfiguracionog
 
 type TockenBucket struct {
-	TokensLeft int       //koliko mu je tokena ostalo
-	lastReset  time.Time //poslednji timestamp kad je resetovan broj tokena koje ima
+	TokensLeft       int //koliko mu je tokena ostalo
+	maxNumOfTokens   int
+	lastReset        time.Time //poslednji timestamp kad je resetovan broj tokena koje ima
+	durationForReset time.Duration
 }
 
-func createBucket() TockenBucket {
-	bucket := TockenBucket{TokensLeft: n, lastReset: time.Now()}
-	return bucket
+func CreateBucket(maxNumOfTokens int, durationForReset time.Duration) *TockenBucket {
+	bucket := TockenBucket{TokensLeft: maxNumOfTokens, lastReset: time.Now(), durationForReset: durationForReset, maxNumOfTokens: maxNumOfTokens}
+	return &bucket
 }
 
-func (bucket *TockenBucket) RefillBucket() { //fja koja ce da resetuje broj tokena
-	bucket.TokensLeft = n
+func (bucket *TockenBucket) refillBucket() { //fja koja ce da resetuje broj tokena
+	bucket.TokensLeft = bucket.maxNumOfTokens
 	bucket.lastReset = time.Now() //zapis kad smo poslednji put resetovali
 }
 
 func (bucket *TockenBucket) MakeRequest() bool { //provera da li ce se zahtev odobriti ili nece
-	if (time.Now().Sub(bucket.lastReset)) > timeToReset { //ako je proslo dovoljno vremena, automatski resetuj
-		bucket.RefillBucket()
+	if (time.Now().Sub(bucket.lastReset)) > bucket.durationForReset { //ako je proslo dovoljno vremena, automatski resetuj
+		bucket.refillBucket()
 		bucket.TokensLeft -= 1 //i kad si resetovao smanji broj zahteva za jedan jer si ovaj odobrio
 		return true
 	} else {

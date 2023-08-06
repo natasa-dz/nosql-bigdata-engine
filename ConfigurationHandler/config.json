@@ -1,6 +1,13 @@
 {
+  "NumOfWalSegmentLogs": 4,
+  "NumOfSummarySegmentLogs": 3,
   "MemtableStruct" : "btree",
-  "SizeOfTable" : 15,
+  "SizeOfMemtable" : 4,
   "Trashold" : 0.8,
-  "BTreeDegree" : 2
+  "BTreeDegree" : 2,
+  "NumOfFiles": "single",
+  "TokenBucketSize": 2,
+  "TokenBucketRefreshTime": 10000,
+  "CacheSize": 2,
+  "MenuPaginationSize": 5
 }

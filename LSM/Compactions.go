@@ -118,7 +118,7 @@ func GetAllFilesFromLevel(dirPath string, level int, onlyData bool) ([]string, e
 	return files, nil
 }
 
-func GetMaxGenerationFromLevel(dirPath string, level int) (int, error) {
+func GetMaxGenerationFromLevel(dirPath string, level int) (int, error) { //NOTE OVO
 	// Read the directory and get a list of file and folder names
 	fileInfos, err := ioutil.ReadDir(dirPath)
 	if err != nil {

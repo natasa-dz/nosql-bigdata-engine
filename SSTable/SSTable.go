@@ -10,13 +10,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"sort"
 	"strconv"
 )
 
-const (
-	SUMMARY_BLOCK_SIZE = 10
-)
+//const (
+//	SUMMARY_BLOCK_SIZE = 10
+//)
 
 type SSTable struct {
 	Header     Header
@@ -29,12 +28,12 @@ type SSTable struct {
 	Metadata MerkleRoot
 }
 
-func BuildSSTable(sortedData []*Log, generation int, level int, sstableType string) {
-	if sstableType == "Single" {
-		BuildSSTableSingle(sortedData, generation, level)
+func BuildSSTable(sortedData []*Log, generation int, level int, sstableType string, summaryBlockSize int) {
+	if sstableType == "single" {
+		BuildSSTableSingle(sortedData, generation, level, summaryBlockSize)
 		return
 	}
-	BuildSSTableMultiple(sortedData, generation, level)
+	BuildSSTableMultiple(sortedData, generation, level, summaryBlockSize)
 }
 
 func GetAllLogs(file *os.File, sstableType string) ([]*Log, error) {
@@ -60,7 +59,7 @@ func GetAllLogs(file *os.File, sstableType string) ([]*Log, error) {
 }
 
 // MULTIPLE:
-func BuildSSTableMultiple(sortedData []*Log, generation int, level int) {
+func BuildSSTableMultiple(sortedData []*Log, generation, level, SUMMARY_BLOCK_SIZE int) {
 	//cetri bafera za cetri razlicita fajla
 	var FilterContent = new(bytes.Buffer)
 	var DataContent = new(bytes.Buffer)
@@ -116,18 +115,14 @@ func WriteIndexLog(IndexContent *bytes.Buffer, KeySize, Key, OffSetInDataFile an
 func WriteToFile(generation int, level int, fileType string, fileOrganisation string, bufferToWrite *bytes.Buffer, TOCData *string) {
 	err := ioutil.WriteFile("./Data/SSTables/"+fileOrganisation+"/"+fileType+"-"+strconv.Itoa(generation)+"-"+strconv.Itoa(level)+".bin", bufferToWrite.Bytes(), 0644)
 	//adding paths of sstable files to TOC
-	*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".bin" + "\n"
 	if err != nil {
 		fmt.Println("Err u pisanju fajla "+fileType, err)
 		return
 	}
+	*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".bin" + "\n"
 }
 func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation string, data string, TOCData *string) {
 	file, err := os.Create("./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt")
-	if TOCData != nil {
-		//adding paths of sstable files to TOC
-		*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt" + "\n"
-	}
 	if err != nil {
 		fmt.Println("Error creating file:", err)
 		return
@@ -138,16 +133,14 @@ func WriteToTxtFile(generation int, level int, fileType string, fileOrganisation
 		fmt.Println("Error writing to file:", err)
 		return
 	}
-}
-func SortData(logs []*Log) {
-	sort.Slice(logs, func(i, j int) bool {
-		return string(logs[i].Key) < string(logs[j].Key)
-	})
+	if TOCData != nil {
+		//adding paths of sstable files to TOC
+		*TOCData += "./Data/SSTables/" + fileOrganisation + "/" + fileType + "-" + strconv.Itoa(generation) + "-" + strconv.Itoa(level) + ".txt" + "\n"
+	}
 }
 
 // SINGLE FILE
-func BuildSSTableSingle(logs []*Log, generation int, level int) error {
-	SortData(logs)
+func BuildSSTableSingle(sortedLogs []*Log, generation, level, SUMMARY_BLOCK_SIZE int) error {
 	header := Header{
 		LogsOffset:    32,
 		BloomOffset:   0,
@@ -156,27 +149,27 @@ func BuildSSTableSingle(logs []*Log, generation int, level int) error {
 
 	// Serialize the logs to bytes
 	var serializedLogs []byte
-	for _, log := range logs {
+	for _, log := range sortedLogs {
 		serializedLogs = append(serializedLogs, log.Serialize()...)
 	}
 	header.BloomOffset += header.LogsOffset + uint64(len(serializedLogs))
 
 	// Build Bloom Filter
-	filter := BuildFilter(logs, len(logs), 0.1)
+	filter := BuildFilter(sortedLogs, len(sortedLogs), 0.1)
 	filterSerialized := filter.Serialize()
 	header.IndexOffset += header.BloomOffset + uint64(filterSerialized.Len())
 
 	// Build Index
-	indexData := BuildIndex(logs, header.LogsOffset)
+	indexData := BuildIndex(sortedLogs, header.LogsOffset)
 	serializedIndex := SerializeIndexes(indexData)
 
 	// Build Summary
-	summary := BuildSummary(indexData, header.IndexOffset)
+	summary := BuildSummary(indexData, header.IndexOffset, SUMMARY_BLOCK_SIZE)
 	summarySerialized := summary.Bytes()
 	header.SummaryOffset += header.IndexOffset + uint64(len(serializedIndex))
 
 	var FileContent = new(bytes.Buffer)
-	merkle := BuildMerkleTreeRoot(logs)
+	merkle := BuildMerkleTreeRoot(sortedLogs)
 	binary.Write(FileContent, binary.LittleEndian, header.HeaderSerialize())
 	binary.Write(FileContent, binary.LittleEndian, serializedLogs)
 	binary.Write(FileContent, binary.LittleEndian, filterSerialized.Bytes())

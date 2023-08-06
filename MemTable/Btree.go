@@ -4,8 +4,6 @@ import (
 	Log "NAiSP/Log"
 )
 
-const q int = 2
-
 // konstanta t je neki stepen ovog drveta koji se odredjuje iz konfiguracionog fajla
 //max broj kljuceva u cvoru: 2*q-1
 
@@ -18,11 +16,17 @@ type Node struct {
 type Tree struct {
 	root      *Node
 	numOfData uint
+	Degree    int
 }
 
-func CreateTree() *Tree {
-	t := Tree{root: nil, numOfData: 0}
+func CreateTree(Degree int) *Tree {
+	t := Tree{root: nil, numOfData: 0, Degree: Degree}
 	return &t
+}
+
+func (t *Tree) Empty() {
+	t.root = nil
+	t.numOfData = 0
 }
 
 func (t *Tree) GetNumOfElements() uint {
@@ -32,16 +36,10 @@ func (t *Tree) GetNumOfElements() uint {
 // Insertuje na odredjeni index u arrayu, a ove ostale pomeri za jedno mesto desno
 func (node *Node) InsertDataIntoArray(index int, data Log.Log) {
 	if len(node.keys) == index { //stavljamo ga na kraj
-		// MOJ WORKAROUND BUGA KOJI NEMAM BLAGE ZASTO SE DESAVA??
-		//TODO: videti sa nekim, nez dal ce ovo praviti problem na nekim drugim mestima gde koristim append koji mi je pravio problem
-		//		i da li je ovo resilo ceo problem ili radi samo za ovaj case iz nekog nepoznatog razloga, takodje sta raditi sa istom ovom
-		//		fjom ali za Node-ove
 		list := make([]Log.Log, len(node.keys)+1)
 		copy(list, node.keys)
 		list[len(node.keys)] = data
 		node.keys = list
-		//******************KOD KOJI JE BIO RANIJE I PRAVIO ERROR NA InsertOVANJU 7 PRI REDOSLEDU(10,20,5,6,7)
-		//node.keys = append(node.keys, value)
 	} else { //ako ide negde pre kraja odredjeni se pomeraju udesno da bi napravili mesto
 		node.keys = append(node.keys[:index+1], node.keys[index:]...)
 		node.keys[index] = data
@@ -87,7 +85,6 @@ func (node *Node) InsertNonFull(data Log.Log) int {
 	return i
 }
 
-// TODO moglo bi se refaktorisati...
 func (node *Node) splitCurrent(root bool, parent *Node) *Node {
 	if root == true { //ako je u pitanju root malo je drugacije jer stvaramo potpuno novog parenta dok ako nije root samo dajemo cvoru iznad
 		parent = &Node{leaf: false, keys: []Log.Log{node.keys[len(node.keys)/2]}}
@@ -119,18 +116,13 @@ func (node *Node) splitCurrent(root bool, parent *Node) *Node {
 }
 
 func (t *Tree) Insert(data Log.Log) {
-	indexInNode, nodePointer := t.Search(string(data.Key)) //pretrazi stablo da vidis da li ga sadrzi, ako sadrzi == samo update
-	if indexInNode != -1 {
-		nodePointer.keys[indexInNode].Value = data.Value
-		return
-	}
 
 	if t.root == nil { //postavljas koren == bice u prvoj iteraciji
 		t.root = &Node{leaf: true, keys: []Log.Log{data}}
 		t.numOfData = 1
 		return
 	}
-	if len(t.root.keys) == 2*q-1 { //koren je pun, znaci mora split pre daljeg nastavka
+	if len(t.root.keys) == 2*t.Degree-1 { //koren je pun, znaci mora split pre daljeg nastavka
 		t.root = t.root.splitCurrent(true, t.root)
 	}
 
@@ -139,7 +131,7 @@ func (t *Tree) Insert(data Log.Log) {
 	for x.leaf == false { //isto sto i while hahahah
 		index := x.getAppropriateChildIndex(string(data.Key))
 		y := x.children[index] //dete na kojem bi trebalo dalje dole da idemo prema listovima
-		if (len(y.keys)) == 2*q-1 {
+		if (len(y.keys)) == 2*t.Degree-1 {
 			x = y.splitCurrent(false, x) //ako je to dete puno mora prvo da se splituje pre nastavka spustanja
 			indexOfNextChild := x.getAppropriateChildIndex(string(data.Key))
 			x = x.children[indexOfNextChild] //onda biramo jedno od dva novonastala deteta (podelom y)
@@ -194,6 +186,7 @@ func (t *Tree) Traverse(node *Node) []*Node {
 		for i := 0; i != len(node.children); i++ {
 			retVal = append(retVal, t.Traverse(node.children[i])...)
 		}
+		break
 	}
 
 	retVal = append(retVal, node)
@@ -209,8 +202,11 @@ func (t *Tree) GetAllNodes() []*Node {
 func (t *Tree) GetAllLogs() []*Log.Log {
 	allNodes := t.GetAllNodes()
 	var allLogs []*Log.Log
-	for i, node := range allNodes {
-		allLogs = append(allLogs, &node.keys[i])
+	for _, node := range allNodes {
+		for _, log := range (*node).keys {
+			l := log
+			allLogs = append(allLogs, &l)
+		}
 	}
 	return allLogs
 }
