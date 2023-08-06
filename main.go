@@ -9,8 +9,8 @@ func main() {
 	choiceOfConfig := WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
 	app.StartApp()
-	//TODO: STA SE DESI U SCENARIU GDE: MEMTABLE VELICINA ZA FLUSH JE RECIMO 8 A MI NAPRAVIMO 6 UNOSA I UGASIMO, KOD NAS
-	//	SE U TOM SLUCAJU TI PODACI UPISUJU SAMO U WAL...DA LI PRI SLEDECEM POKRETANJU TREBA UCITATI TO IZ WALA ILI KRECES OD 0?
+	//TODO: AKO SE DESI DA NAPRAVIMO 6 ULAZA I PREKINEMO, A RECIMO DA MEMTABLE PRIMA VELICINU DO 8, ONDA PRI SLEDECEM POKRETANJU
+	// MORAMO UCITATI OVIH 6 I ONDA NASTAVITI SAMO DALJE, TREBA DA BUDE TAJ KAO RECOVERY!
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}

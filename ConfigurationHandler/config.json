@@ -1,4 +1,5 @@
 {
+  "NumOfWalSegmentLogs": 4,
   "MemtableStruct" : "btree",
   "SizeOfMemtable" : 5,
   "Trashold" : 0.8,

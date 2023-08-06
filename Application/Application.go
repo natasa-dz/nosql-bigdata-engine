@@ -16,11 +16,10 @@ type Application struct {
 	ConfigurationData *config.ConfigHandler
 	Memtable          *memtable.Memtable
 	WalFile           *os.File
-	//fixme: probaj da izmajmunises da u memoriji(aplikaciji il tako negde) cuvas broj unetih, obrisanih i prepisanih
-	// rekorda(sve sto ce se upisati u wal) i onda kad to predje definisan config broj ti napravi novi wal i pisi tamo?
 	//todo: config u sebi treba da ima broj podataka po strani koji ce da prikazuje
-	TokenBucket *bucket.TockenBucket
-	Cache       *cache.LRUCache
+	TokenBucket     *bucket.TockenBucket
+	Cache           *cache.LRUCache
+	NumOfWalInserts int //brojcanik za koliko smo logova bacili u 1 wal
 }
 
 func InitializeApp(choice string) *Application {
@@ -30,8 +29,9 @@ func InitializeApp(choice string) *Application {
 	} else {
 		app = Application{ConfigurationData: config.UseDefaultConfiguration()}
 	}
+	app.NumOfWalInserts = 0
 	app.Memtable = memtable.GenerateMemtable(app.ConfigurationData.SizeOfMemtable, app.ConfigurationData.Trashold, app.ConfigurationData.MemtableStruct, int(app.ConfigurationData.BTreeDegree))
-	app.WalFile, _ = wal.CreateNewWAL() //TODO: resiti stvari koje treba kroz konfiguraciju da se gledaju sto se tice wal-a
+	app.WalFile, _ = wal.CreateNewWAL()
 	app.TokenBucket = bucket.CreateBucket(app.ConfigurationData.TokenBucketSize, time.Duration(app.ConfigurationData.TokenBucketRefreshTime))
 	app.Cache = cache.CreateCache(app.ConfigurationData.CacheSize)
 	return &app
@@ -39,6 +39,9 @@ func InitializeApp(choice string) *Application {
 func (app *Application) StartApp() {
 	var userInput string
 	for userInput != "X" {
+		if app.NumOfWalInserts == app.ConfigurationData.NumOfWalSegmentLogs {
+			app.changeWalFile()
+		}
 		userInput = menu.WriteMainMenu()
 		if userInput == "1" {
 			if app.TokenBucket.MakeRequest() { //proveri ima li slobodnih zahteva
@@ -47,9 +50,15 @@ func (app *Application) StartApp() {
 				wal.AppendToWal(app.WalFile, newLog)                          //ubaci u wal
 				app.Memtable.Insert(newLog, app.ConfigurationData.NumOfFiles) //ubaci u memtable
 				app.Cache.Insert(newLog)                                      //ubaci ga u cache
+				app.NumOfWalInserts++
 			} else {
 				menu.OutOfTokensNotification()
 			}
 		}
 	}
+}
+
+func (app *Application) changeWalFile() { //fja za promenu wal file kad stigne do konfigurabilnog broja segmenata u sebi
+	app.WalFile, _ = wal.CreateNewWAL()
+	app.NumOfWalInserts = 0
 }

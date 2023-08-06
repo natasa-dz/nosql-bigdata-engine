@@ -11,11 +11,11 @@ const configFilePath = "ConfigurationHandler/config.json"
 
 type ConfigHandler struct {
 	//WalSegmentSize --> velicina wal00001.log fajla
-
-	MemtableStruct string  `json:"MemtableStruct"`
-	SizeOfMemtable uint32  `json:"SizeOfMemtable"`
-	Trashold       float64 `json:"Trashold"`
-	NumOfFiles     string  `json:"NumOfFiles"`
+	NumOfWalSegmentLogs int     `json:"NumOfWalSegmentLogs"`
+	MemtableStruct      string  `json:"MemtableStruct"`
+	SizeOfMemtable      uint32  `json:"SizeOfMemtable"`
+	Trashold            float64 `json:"Trashold"`
+	NumOfFiles          string  `json:"NumOfFiles"`
 	//if memtable struct is btree
 	BTreeDegree uint32 `json:"BTreeDegree"`
 	//else struct == skipList(onda mi trebaju elementi za skiplist kao sto za btree imam njegov degree
