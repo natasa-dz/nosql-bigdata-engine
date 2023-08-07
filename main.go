@@ -2,20 +2,13 @@ package main
 
 import (
 	application "NAiSP/Application"
-	"NAiSP/BloomFilter"
-	. "NAiSP/Log"
 	. "NAiSP/Menu"
-	. "NAiSP/SSTable"
-	"fmt"
-	"os"
 )
 
 func main() {
 	choiceOfConfig := WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
 	app.StartApp()
-	//TODO: AKO SE DESI DA NAPRAVIMO 6 ULAZA I PREKINEMO, A RECIMO DA MEMTABLE PRIMA VELICINU DO 8, ONDA PRI SLEDECEM POKRETANJU
-	// MORAMO UCITATI OVIH 6 I ONDA NASTAVITI SAMO DALJE, TREBA DA BUDE TAJ KAO RECOVERY!
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}
@@ -104,7 +97,7 @@ func main() {
 	// Call writeToMultipleFiles function
 	//BuildSSTableMultiple(logs, 2, 1)
 
-	fmt.Println("Data written to multiple files successfully!")
+	/*fmt.Println("Data written to multiple files successfully!")
 	file, err := os.Open("./Data/SSTables/Multiple/Bloom-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
@@ -163,7 +156,7 @@ func main() {
 	defer file.Close()
 	defer file2.Close()
 	defer file3.Close()
-	defer file4.Close()
+	defer file4.Close()*/
 	// Call writeToSingleFile function
 	/*err := BuildSSTableSingle(logs, 2, 1)
 	if err != nil {
