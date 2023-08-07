@@ -31,12 +31,8 @@ func InitializeApp(choice string) *Application {
 	app.NumOfWalInserts = 0
 	app.Memtable = memtable.GenerateMemtable(app.ConfigurationData.SizeOfMemtable, app.ConfigurationData.Trashold, app.ConfigurationData.MemtableStruct, int(app.ConfigurationData.BTreeDegree))
 	app.Cache = cache.CreateCache(app.ConfigurationData.CacheSize)
-	needNewWal := app.Recover(app.ConfigurationData.NumOfFiles)
-	if needNewWal {
-		app.WalFile, _ = wal.CreateNewWAL(app.ConfigurationData.NumOfFiles)
-	} else {
-		app.WalFile, _ = wal.LoadLatestWAL(app.ConfigurationData.NumOfFiles)
-	}
+	app.Recover(app.ConfigurationData.NumOfFiles)
+	app.WalFile, _ = wal.LoadLatestWAL(app.ConfigurationData.NumOfFiles)
 	app.TokenBucket = bucket.CreateBucket(app.ConfigurationData.TokenBucketSize, time.Duration(app.ConfigurationData.TokenBucketRefreshTime))
 	return &app
 }

@@ -10,14 +10,9 @@ import (
 	"strings"
 )
 
-func (app *Application) Recover(numOfFiles string) bool {
+func (app *Application) Recover(numOfFiles string) {
 	walFiles := getAllWalFiles(numOfFiles) //ako je prazan direktorijum on ce napraviti novi wal.log fajl
 	SSData := extractDataFromSSFile(numOfFiles)
-	if SSData == nil { //ne postoji ni jedan SStable i dalje u tom direktorijumu
-		//kako ne postoji ni jedan SS onda nije postojao ni jedan wal(znaci otvoren je prvi prazan u gore fji) i onda nam
-		//ne treba novi wal.log
-		return false //bool oznacava da li treba da se otvara novi wal ili da se ucitava stari posle ove fje!
-	}
 	logsToInsertInMemtable, numOfLogsInLastWal := getAllLogsForMemtable(walFiles, SSData, numOfFiles)
 	for _, log := range logsToInsertInMemtable {
 		if log.Tombstone == false {
@@ -28,10 +23,6 @@ func (app *Application) Recover(numOfFiles string) bool {
 		}*/
 	}
 	app.NumOfWalInserts = numOfLogsInLastWal
-	if app.NumOfWalInserts == app.ConfigurationData.NumOfWalSegmentLogs {
-		return true //poslednji je pun - treba novi
-	}
-	return false //nije pun - ne treba novi
 }
 
 func getAllLogsForMemtable(walFiles []os.DirEntry, SSData []*Log, numOfFiles string) ([]*Log, int) {
