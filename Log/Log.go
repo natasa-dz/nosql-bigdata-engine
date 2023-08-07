@@ -68,7 +68,7 @@ func CRC32(log *Log) uint32 {
 
 // kreiranje loga pri unosu
 func CreateLog(key []byte, value []byte) *Log {
-	log := Log{Key: key, Value: value, Tombstone: true, Timestamp: time.Now().Unix(), KeySize: int64(len(key)), ValueSize: int64(len(value))}
+	log := Log{Key: key, Value: value, Tombstone: false, Timestamp: time.Now().Unix(), KeySize: int64(len(key)), ValueSize: int64(len(value))}
 	log.CRC = CRC32(&log)
 	return &log
 }
@@ -171,4 +171,11 @@ func ReadLog(file *os.File) (*Log, error) {
 	log.Value = valueBytes
 
 	return &log, nil
+}
+
+func (l *Log) Equals(toCheck *Log) bool {
+	if string(l.Key) == string(toCheck.Key) && string(l.Value) == string(toCheck.Value) && l.CRC == toCheck.CRC {
+		return true
+	}
+	return false
 }

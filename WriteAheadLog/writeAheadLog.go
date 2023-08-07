@@ -38,46 +38,6 @@ var (
 
 //////////////////////////////////////////////////////////////////////
 
-// Function to create a new WAL
-func CreateWALInstance(tombstone bool, key, value []byte) *log.Log {
-	crc := crc32.NewIEEE()
-
-	timestamp := time.Now().UnixNano()
-	b := make([]byte, log.TIMESTAMP_SIZE)
-	binary.BigEndian.PutUint64(b, uint64(timestamp))
-	crc.Write(b)
-
-	b = make([]byte, log.TOMBSTONE_SIZE)
-	if tombstone {
-		b[0] = 1
-	}
-	crc.Write(b)
-
-	keySize := uint64(len(key))
-	b = make([]byte, log.KEY_SIZE_SIZE)
-	binary.BigEndian.PutUint64(b, keySize)
-	crc.Write(b)
-
-	valueSize := uint64(len(value))
-	b = make([]byte, log.VALUE_SIZE_SIZE)
-	binary.BigEndian.PutUint64(b, valueSize)
-	crc.Write(b)
-
-	crc.Write(key)
-
-	crc.Write(value)
-
-	return &log.Log{
-		CRC:       crc.Sum32(),
-		Timestamp: timestamp,
-		Tombstone: tombstone,
-		KeySize:   int64(keySize),
-		ValueSize: int64(valueSize),
-		Key:       key,
-		Value:     value,
-	}
-}
-
 // Function to create a new WAL file and return its file handle
 func CreateNewWAL(numOfFiles string) (*os.File, error) {
 	// Get the list of existing WAL files to find the next available offset
@@ -111,67 +71,6 @@ func CreateNewWAL(numOfFiles string) (*os.File, error) {
 	// Optionally, initialize any necessary metadata in the new file here
 
 	return newFile, nil
-}
-
-// Function to delete old segments from the WAL directory
-func deleteSegments(lowWaterMark int) error {
-	files, err := os.ReadDir("Wal/")
-	if err != nil {
-		return err
-	}
-
-	// Filter segments that are older than the lowWaterMark
-	var segmentsToDelete []os.DirEntry
-	for _, file := range files {
-		filename := file.Name()
-		offsetStr := strings.TrimSuffix(filename, ".log")
-		offset, err := strconv.Atoi(strings.Split(offsetStr, "_")[1]) // Extract the offset from the filename
-		if err != nil {
-			continue // Skip files with incorrect naming format
-		}
-
-		if offset < lowWaterMark {
-			segmentsToDelete = append(segmentsToDelete, file)
-		}
-	}
-
-	// Delete the segments
-	for _, file := range segmentsToDelete {
-		filename := "Wal/" + file.Name()
-		err := os.Remove(filename)
-		if err != nil {
-			return err
-		}
-		fmt.Println("Deleted segment:", filename)
-	}
-
-	// Rename the remaining segments to adjust offset numbers
-	files, err = os.ReadDir("Wal/")
-	if err != nil {
-		return err
-	}
-
-	for i, file := range files {
-		filename := "Wal/" + file.Name()
-		newFilename := "Wal/wal_" + fmt.Sprintf("%04d", i+1) + ".log"
-		err := os.Rename(filename, newFilename)
-		if err != nil {
-			return err
-		}
-		fmt.Println("Renamed segment:", filename, "to", newFilename)
-	}
-
-	return nil
-}
-
-// Helper function to check if a file is in the slice of segmentsToDelete
-func contains(slice []os.DirEntry, element os.DirEntry) (int, bool) {
-	for i, item := range slice {
-		if item == element {
-			return i, true
-		}
-	}
-	return -1, false
 }
 
 // AppendToWal appends the given WalRecord to the end of the WAL file.
@@ -232,6 +131,36 @@ func AppendToWal(walFile *os.File, record *log.Log) error {
 	}
 
 	return nil
+}
+
+func LoadLatestWAL(numOfFiles string) (*os.File, error) {
+	// Get the list of existing WAL files to find the next available offset
+	numOfFiles = strings.Title(numOfFiles)
+	files, err := os.ReadDir("Data/Wal/" + numOfFiles + "/")
+	if err != nil {
+		return nil, err
+	}
+
+	// Determine the next available offset for the new WAL file
+	lastFilename := files[len(files)-1].Name()
+
+	maxOffset, err := strconv.Atoi(strings.Split(lastFilename[:len(lastFilename)-4], "_")[1])
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate the new WAL filename based on the offset
+	maxFilename := fmt.Sprintf("Data/Wal/"+numOfFiles+"/wal_%04d.log", maxOffset)
+
+	// Create or open the new WAL file
+	maxFile, err := os.OpenFile(maxFilename, os.O_CREATE|os.O_RDWR, 0777)
+	if err != nil {
+		return nil, err
+	}
+
+	// Optionally, initialize any necessary metadata in the new file here
+
+	return maxFile, nil
 }
 
 /*
@@ -327,6 +256,108 @@ func ReadWal(walFile *os.File) ([]*log.Log, error) {
 	}
 
 	return records, nil
+}
+
+// -------------------------------------------UNUSED-------------------------------------------------------
+// Function to delete old segments from the WAL directory
+func deleteSegments(lowWaterMark int) error {
+	files, err := os.ReadDir("Wal/")
+	if err != nil {
+		return err
+	}
+
+	// Filter segments that are older than the lowWaterMark
+	var segmentsToDelete []os.DirEntry
+	for _, file := range files {
+		filename := file.Name()
+		offsetStr := strings.TrimSuffix(filename, ".log")
+		offset, err := strconv.Atoi(strings.Split(offsetStr, "_")[1]) // Extract the offset from the filename
+		if err != nil {
+			continue // Skip files with incorrect naming format
+		}
+
+		if offset < lowWaterMark {
+			segmentsToDelete = append(segmentsToDelete, file)
+		}
+	}
+
+	// Delete the segments
+	for _, file := range segmentsToDelete {
+		filename := "Wal/" + file.Name()
+		err := os.Remove(filename)
+		if err != nil {
+			return err
+		}
+		fmt.Println("Deleted segment:", filename)
+	}
+
+	// Rename the remaining segments to adjust offset numbers
+	files, err = os.ReadDir("Wal/")
+	if err != nil {
+		return err
+	}
+
+	for i, file := range files {
+		filename := "Wal/" + file.Name()
+		newFilename := "Wal/wal_" + fmt.Sprintf("%04d", i+1) + ".log"
+		err := os.Rename(filename, newFilename)
+		if err != nil {
+			return err
+		}
+		fmt.Println("Renamed segment:", filename, "to", newFilename)
+	}
+
+	return nil
+}
+
+// Helper function to check if a file is in the slice of segmentsToDelete
+func contains(slice []os.DirEntry, element os.DirEntry) (int, bool) {
+	for i, item := range slice {
+		if item == element {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+// Function to create a new WAL
+func CreateWALInstance(tombstone bool, key, value []byte) *log.Log {
+	crc := crc32.NewIEEE()
+
+	timestamp := time.Now().UnixNano()
+	b := make([]byte, log.TIMESTAMP_SIZE)
+	binary.BigEndian.PutUint64(b, uint64(timestamp))
+	crc.Write(b)
+
+	b = make([]byte, log.TOMBSTONE_SIZE)
+	if tombstone {
+		b[0] = 1
+	}
+	crc.Write(b)
+
+	keySize := uint64(len(key))
+	b = make([]byte, log.KEY_SIZE_SIZE)
+	binary.BigEndian.PutUint64(b, keySize)
+	crc.Write(b)
+
+	valueSize := uint64(len(value))
+	b = make([]byte, log.VALUE_SIZE_SIZE)
+	binary.BigEndian.PutUint64(b, valueSize)
+	crc.Write(b)
+
+	crc.Write(key)
+
+	crc.Write(value)
+
+	return &log.Log{
+		CRC:       crc.Sum32(),
+		Timestamp: timestamp,
+		Tombstone: tombstone,
+		KeySize:   int64(keySize),
+		ValueSize: int64(valueSize),
+		Key:       key,
+		Value:     value,
+	}
 }
 
 /*func main() {
