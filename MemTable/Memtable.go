@@ -92,7 +92,7 @@ func getLastGen(numOfFiles string) int {
 		}
 	}
 
-	maxgen := 1
+	maxgen := 0
 	for _, fileName := range onlyTOCFiles {
 		parts := strings.Split(fileName, "-")
 		gen, _ := strconv.Atoi(parts[1])
