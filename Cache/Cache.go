@@ -42,7 +42,15 @@ func (cache *LRUCache) Insert(newLog *Log) {
 	}
 }
 
-func (cache *LRUCache) Search(key string) []byte {
+func (cache *LRUCache) Delete(logToDelete *Log) { //bice koriscen prilikom delete iz memtabla
+	adrOfExistingElem, ok := cache.cache[string(logToDelete.Key)]
+	if ok { //elem koji se obrisan je u catchu
+		cache.list.Remove(adrOfExistingElem)
+		delete(cache.cache, string(logToDelete.Key))
+	}
+}
+
+func (cache *LRUCache) Search(key string) []byte { //bice koriscen prilikom read patha
 	//proveri mapu, ako ima pomeri elem na 'pocetak' liste i vrati vrednost elementa, ako nema vrati nil
 	adrOfExistingElem, ok := cache.cache[key]
 	if ok {
