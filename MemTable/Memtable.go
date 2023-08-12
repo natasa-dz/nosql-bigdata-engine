@@ -52,9 +52,9 @@ func (table *Memtable) TableFull() bool {
 }
 
 func (table *Memtable) Insert(data *Log, numOfFiles string, summaryBlockSize int) {
-	indexInNode, AddressOfNode := table.tableStruct.Search(string(data.Key))
-	if AddressOfNode != nil {
-		AddressOfNode.keys[indexInNode] = *data
+	foundLog := table.tableStruct.Search(string(data.Key))
+	if foundLog != nil {
+		foundLog.Value = (*data).Value
 	} else {
 		table.tableStruct.Insert(*data)
 		if table.TableFull() {
@@ -70,11 +70,11 @@ func (table *Memtable) Delete(key string) bool {
 }
 
 func (table *Memtable) Search(key string) *Log {
-	indexInNode, nodeAdrress := table.tableStruct.Search(key)
-	if indexInNode != -1 {
-		return &nodeAdrress.keys[indexInNode]
+	foundLog := table.tableStruct.Search(key)
+	if foundLog != nil {
+		return foundLog
 	}
-	return &Log{} //NOTE: OVO JE JAKO BITNO DA SE PROVERAVA NAKON SEARCHA UZ POMOC MEMTABLA!!!!
+	return nil
 }
 
 // dobavi poslednju generaciju i najveci level za pravljenje SSTabla

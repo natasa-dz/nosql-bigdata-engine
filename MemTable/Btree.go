@@ -143,16 +143,16 @@ func (t *Tree) Insert(data Log.Log) {
 	t.numOfData += 1
 }
 
-func (t *Tree) Search(key string) (int, *Node) { //retVal je index u Node(keys) na kom se nalazi trazena vrednost, -1 ako nema vrednosti
+func (t *Tree) Search(key string) *Log.Log { //retVal je index u Node(keys) na kom se nalazi trazena vrednost, -1 ako nema vrednosti
 	if t.root == nil {
-		return -1, nil
+		return nil
 	}
 
 	x := t.root
 	for x.leaf != true {
 		indexOfSearchedKey := x.Contains(key)
 		if indexOfSearchedKey != -1 {
-			return indexOfSearchedKey, x
+			return &x.keys[indexOfSearchedKey]
 		} else {
 			indexOfChildToContinue := x.getAppropriateChildIndex(key)
 			x = x.children[indexOfChildToContinue]
@@ -161,15 +161,15 @@ func (t *Tree) Search(key string) (int, *Node) { //retVal je index u Node(keys) 
 
 	indexOfSearchedKey := x.Contains(key)
 	if indexOfSearchedKey != -1 {
-		return indexOfSearchedKey, x
+		return &x.keys[indexOfSearchedKey]
 	}
-	return -1, nil
+	return nil
 }
 
 func (t *Tree) Delete(key string) bool { //samo logicko brisanje izmenice tombstone, nece zapravo obrisati iz stabla
-	indexInNode, node := t.Search(key)
-	if node != nil {
-		node.keys[indexInNode].Tombstone = false
+	founudLog := t.Search(key)
+	if founudLog != nil {
+		founudLog.Tombstone = true
 		return true
 	}
 	return false
