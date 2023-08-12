@@ -24,9 +24,9 @@ type Memtable struct {
 func GenerateMemtable(kapacitetStrukture uint32, pragZaFlush float64, imeStrukture string, stepenBStabla int) *Memtable {
 	table := Memtable{size: kapacitetStrukture, trashold: pragZaFlush}
 	if imeStrukture == "btree" {
-		table.tableStruct = CreateTree(stepenBStabla)
+		//table.tableStruct = CreateTree(stepenBStabla)
 	} else {
-		//TODO treba da se inicijalizuje skip lista
+		table.tableStruct = InitSkipList(30)
 	}
 	return &table
 }
@@ -52,10 +52,19 @@ func (table *Memtable) TableFull() bool {
 }
 
 func (table *Memtable) Insert(data *Log, numOfFiles string, summaryBlockSize int) {
-	indexInNode, AddressOfNode := table.tableStruct.Search(string(data.Key))
-	if AddressOfNode != nil {
-		AddressOfNode.keys[indexInNode] = *data
-	} else {
+	//indexInNode, AddressOfNode := table.tableStruct.Search(string(data.Key))
+	found := table.tableStruct.Search(string(data.Key))
+	//if AddressOfNode != nil {
+	//	AddressOfNode.keys[indexInNode] = *data
+	//} else {
+	//	table.tableStruct.Insert(*data)
+	//	if table.TableFull() {
+	//		table.Flush(numOfFiles, summaryBlockSize)
+	//		table.tableStruct.Empty()
+	//	}
+	//}
+
+	if found == nil {
 		table.tableStruct.Insert(*data)
 		if table.TableFull() {
 			table.Flush(numOfFiles, summaryBlockSize)
@@ -70,9 +79,9 @@ func (table *Memtable) Delete(key string) bool {
 }
 
 func (table *Memtable) Search(key string) *Log {
-	indexInNode, nodeAdrress := table.tableStruct.Search(key)
-	if indexInNode != -1 {
-		return &nodeAdrress.keys[indexInNode]
+	found := table.tableStruct.Search(key)
+	if found != nil {
+		return found
 	}
 	return &Log{} //NOTE: OVO JE JAKO BITNO DA SE PROVERAVA NAKON SEARCHA UZ POMOC MEMTABLA!!!!
 }
