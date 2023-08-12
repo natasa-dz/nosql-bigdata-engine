@@ -9,7 +9,7 @@ import (
 
 type Node struct {
 	leaf     bool
-	keys     []Log.Log
+	keys     []*Log.Log
 	children []*Node //lista pokazivaca na Nodeove koji su children
 }
 
@@ -34,9 +34,9 @@ func (t *Tree) GetNumOfElements() uint {
 }
 
 // Insertuje na odredjeni index u arrayu, a ove ostale pomeri za jedno mesto desno
-func (node *Node) InsertDataIntoArray(index int, data Log.Log) {
+func (node *Node) InsertDataIntoArray(index int, data *Log.Log) {
 	if len(node.keys) == index { //stavljamo ga na kraj
-		list := make([]Log.Log, len(node.keys)+1)
+		list := make([]*Log.Log, len(node.keys)+1)
 		copy(list, node.keys)
 		list[len(node.keys)] = data
 		node.keys = list
@@ -76,7 +76,7 @@ func (node *Node) Contains(key string) int { //ako cvor sadrzi kljuc vratice ind
 }
 
 // Insertion functions
-func (node *Node) InsertNonFull(data Log.Log) int {
+func (node *Node) InsertNonFull(data *Log.Log) int {
 	i := len(node.keys)
 	for i > 0 && string(node.keys[i-1].Key) > string(data.Key) { //proveravaj od poslednjeg i smanjuj dok ne dodjes do indexa na koji ces da insertujes Data
 		i--
@@ -87,7 +87,7 @@ func (node *Node) InsertNonFull(data Log.Log) int {
 
 func (node *Node) splitCurrent(root bool, parent *Node) *Node {
 	if root == true { //ako je u pitanju root malo je drugacije jer stvaramo potpuno novog parenta dok ako nije root samo dajemo cvoru iznad
-		parent = &Node{leaf: false, keys: []Log.Log{node.keys[len(node.keys)/2]}}
+		parent = &Node{leaf: false, keys: []*Log.Log{node.keys[len(node.keys)/2]}}
 		childLeft := &Node{leaf: node.children == nil}     //trenutni cvor, posto je pun se deli. Srednji elem u njemu ce ici 'gore'
 		childLeft.keys = node.keys[:(len(node.keys) / 2)]  //u novi parent Node, a ostatak tako podeljen ce biti levo i desno dete.
 		childRight := &Node{leaf: node.children == nil}    //deca ce se takodje rasporediti po toj podeli gde ce levo dete kljuca
@@ -115,10 +115,10 @@ func (node *Node) splitCurrent(root bool, parent *Node) *Node {
 	}
 }
 
-func (t *Tree) Insert(data Log.Log) {
+func (t *Tree) Insert(data *Log.Log) {
 
 	if t.root == nil { //postavljas koren == bice u prvoj iteraciji
-		t.root = &Node{leaf: true, keys: []Log.Log{data}}
+		t.root = &Node{leaf: true, keys: []*Log.Log{data}}
 		t.numOfData = 1
 		return
 	}
@@ -152,7 +152,7 @@ func (t *Tree) Search(key string) *Log.Log { //retVal je index u Node(keys) na k
 	for x.leaf != true {
 		indexOfSearchedKey := x.Contains(key)
 		if indexOfSearchedKey != -1 {
-			return &x.keys[indexOfSearchedKey]
+			return x.keys[indexOfSearchedKey]
 		} else {
 			indexOfChildToContinue := x.getAppropriateChildIndex(key)
 			x = x.children[indexOfChildToContinue]
@@ -161,7 +161,7 @@ func (t *Tree) Search(key string) *Log.Log { //retVal je index u Node(keys) na k
 
 	indexOfSearchedKey := x.Contains(key)
 	if indexOfSearchedKey != -1 {
-		return &x.keys[indexOfSearchedKey]
+		return x.keys[indexOfSearchedKey]
 	}
 	return nil
 }
@@ -205,7 +205,7 @@ func (t *Tree) GetAllLogs() []*Log.Log {
 	for _, node := range allNodes {
 		for _, log := range (*node).keys {
 			l := log
-			allLogs = append(allLogs, &l)
+			allLogs = append(allLogs, l)
 		}
 	}
 	return allLogs

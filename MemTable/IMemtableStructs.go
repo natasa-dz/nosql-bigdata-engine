@@ -6,7 +6,7 @@ import . "NAiSP/Log"
 
 type IMemtableStruct interface {
 	GetNumOfElements() uint
-	Insert(key Log)
+	Insert(key *Log)
 	Search(key string) *Log //vraca pokazivac na node gde je kljuc i index gde se nalazi kljuc u tom Nodu1
 	Delete(key string) bool
 	GetAllLogs() []*Log

@@ -56,7 +56,7 @@ func (table *Memtable) Insert(data *Log, numOfFiles string, summaryBlockSize int
 	if foundLog != nil {
 		foundLog.Value = (*data).Value
 	} else {
-		table.tableStruct.Insert(*data)
+		table.tableStruct.Insert(data)
 		if table.TableFull() {
 			table.Flush(numOfFiles, summaryBlockSize)
 			table.tableStruct.Empty()
