@@ -153,7 +153,7 @@ func (s *SkipList) Delete(key string) bool {
 }
 
 func (s *SkipList) GetAllLogs() []*Log {
-	allElements := make([]*Log, s.size)
+	var allElements []*Log
 
 	current := s.head
 
