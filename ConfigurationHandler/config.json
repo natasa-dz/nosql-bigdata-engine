@@ -1,7 +1,7 @@
 {
   "NumOfWalSegmentLogs": 2,
   "NumOfSummarySegmentLogs": 3,
-  "MemtableStruct" : "skipList",
+  "MemtableStruct" : "btree",
   "SizeOfMemtable" : 5,
   "Trashold" : 0.8,
   "BTreeDegree" : 2,

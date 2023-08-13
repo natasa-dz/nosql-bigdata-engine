@@ -37,22 +37,19 @@ func getAllLogsForMemtable(walFiles []os.DirEntry, SSData []*Log, numOfFiles str
 		}
 		defer openedFile.Close()
 
-		for {
-			log, err := wal.ReadNextRecordFromWal(openedFile) //citas 1 po 1 iz wal.log
-			if err != nil {
-				break // kraj Wal fajla
-			}
+		logs, _ := wal.ReadWal(openedFile) //iscitas ceo wal fajl
+		for j := len(logs) - 1; j >= 0; j-- {
+
 			if i == 0 {
 				numOfLogsInLastWalFile++
 			}
-
-			if Contains(SSData, log) {
+			if Contains(SSData, logs[j]) {
 				found = true
 				break
 			}
-			retVal = append(retVal, log)
-
+			retVal = append(retVal, logs[j])
 		}
+
 		if found {
 			break
 		}
