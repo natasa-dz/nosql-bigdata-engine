@@ -50,7 +50,7 @@ func UseCustomConfiguration() *ConfigHandler {
 }
 
 func UseDefaultConfiguration() *ConfigHandler {
-	config := ConfigHandler{NumOfWalSegmentLogs: 5, NumOfSummarySegmentLogs: 10, MemtableStruct: "skipList", SizeOfMemtable: 30, Trashold: 0.7, BTreeDegree: 2, SkipListMaxHeight: 10, NumOfFiles: "multiple",
+	config := ConfigHandler{NumOfWalSegmentLogs: 2, NumOfSummarySegmentLogs: 10, MemtableStruct: "btree", SizeOfMemtable: 5, Trashold: 0.8, BTreeDegree: 2, SkipListMaxHeight: 10, NumOfFiles: "multiple",
 		TokenBucketSize: 3, TokenBucketRefreshTime: 10000, CacheSize: 4, MenuPaginationSize: 3}
 	return &config
 }

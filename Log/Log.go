@@ -174,7 +174,7 @@ func ReadLog(file *os.File) (*Log, error) {
 }
 
 func (l *Log) Equals(toCheck *Log) bool {
-	if string(l.Key) == string(toCheck.Key) && string(l.Value) == string(toCheck.Value) && l.CRC == toCheck.CRC {
+	if string(l.Key) == string(toCheck.Key) && string(l.Value) == string(toCheck.Value) && l.CRC == toCheck.CRC && l.Tombstone == toCheck.Tombstone {
 		return true
 	}
 	return false

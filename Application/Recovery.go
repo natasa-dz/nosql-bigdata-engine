@@ -14,12 +14,13 @@ func (app *Application) Recover(numOfFiles string) {
 	walFiles := getAllWalFiles(numOfFiles) //ako je prazan direktorijum on ce napraviti novi wal.log fajl
 	SSData := extractDataFromSSFile(numOfFiles)
 	logsToInsertInMemtable, numOfLogsInLastWal := getAllLogsForMemtable(walFiles, SSData, numOfFiles)
-	for _, log := range logsToInsertInMemtable {
-		if log.Tombstone == false {
-			app.Memtable.Insert(log, numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs)
-			app.Cache.Insert(log)
+	for i := len(logsToInsertInMemtable) - 1; i >= 0; i-- {
+		if logsToInsertInMemtable[i].Tombstone == false {
+			app.Memtable.Insert(logsToInsertInMemtable[i], numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs)
+			app.Cache.Insert(logsToInsertInMemtable[i])
 		} /*else {
 			app.Memtable.Delete(string(log.Key))
+			app.Cache.delete(string...)
 		}*/
 	}
 	app.NumOfWalInserts = numOfLogsInLastWal
@@ -37,22 +38,19 @@ func getAllLogsForMemtable(walFiles []os.DirEntry, SSData []*Log, numOfFiles str
 		}
 		defer openedFile.Close()
 
-		for {
-			log, err := wal.ReadNextRecordFromWal(openedFile) //citas 1 po 1 iz wal.log
-			if err != nil {
-				break // kraj Wal fajla
-			}
+		logs, _ := wal.ReadWal(openedFile) //iscitas ceo wal fajl
+		for j := len(logs) - 1; j >= 0; j-- {
+
 			if i == 0 {
 				numOfLogsInLastWalFile++
 			}
-
-			if Contains(SSData, log) {
+			if Contains(SSData, logs[j]) {
 				found = true
 				break
 			}
-			retVal = append(retVal, log)
-
+			retVal = append(retVal, logs[j])
 		}
+
 		if found {
 			break
 		}
