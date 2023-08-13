@@ -21,12 +21,12 @@ type Memtable struct {
 	tableStruct IMemtableStruct
 }
 
-func GenerateMemtable(kapacitetStrukture uint32, pragZaFlush float64, imeStrukture string, stepenBStabla int) *Memtable {
+func GenerateMemtable(kapacitetStrukture uint32, pragZaFlush float64, imeStrukture string, stepenBStabla int, skipListHeight int) *Memtable {
 	table := Memtable{size: kapacitetStrukture, trashold: pragZaFlush}
 	if imeStrukture == "btree" {
 		//table.tableStruct = CreateTree(stepenBStabla)
 	} else {
-		table.tableStruct = InitSkipList(30)
+		table.tableStruct = InitSkipList(skipListHeight)
 	}
 	return &table
 }

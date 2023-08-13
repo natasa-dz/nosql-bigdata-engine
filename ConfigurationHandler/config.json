@@ -5,6 +5,7 @@
   "SizeOfMemtable" : 5,
   "Trashold" : 0.8,
   "BTreeDegree" : 2,
+  "SkipListMaxHeight": 10,
   "NumOfFiles": "single",
   "TokenBucketSize": 2,
   "TokenBucketRefreshTime": 10000,
