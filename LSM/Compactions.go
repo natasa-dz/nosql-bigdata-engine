@@ -4,7 +4,9 @@ import (
 	. "NAiSP/Log"
 	. "NAiSP/SSTable"
 	"fmt"
+	"io"
 	"io/ioutil"
+	//"log"
 	"os"
 	"strconv"
 	"strings"
@@ -160,34 +162,126 @@ func DeleteFilesFromLevel(level int, sstableType string) {
 
 }
 
-func SizeTieredCompaction(level int, sstableType string) {
+type FileInfo struct {
+	File       *os.File
+	CurrentLog *Log
+	Header     *Header
+}
+
+func FindMinLog(filesInfo []*FileInfo) int {
+	minLog := filesInfo[0].CurrentLog
+	minIndex := 0
+	for i := 0; i < len(filesInfo); i++ {
+		if string(filesInfo[i].CurrentLog.Key) < string(minLog.Key) {
+			minLog = filesInfo[i].CurrentLog
+			minIndex = i
+		} else if string(filesInfo[i].CurrentLog.Key) == string(minLog.Key) && filesInfo[i].CurrentLog.Timestamp > minLog.Timestamp {
+			ReadLogSingle(filesInfo[minIndex])
+			minLog = filesInfo[i].CurrentLog
+			minIndex = i
+		}
+	}
+	return minIndex
+}
+
+func IsLogsOffsetEnd(fileInfo *FileInfo) bool {
+	offset, _ := fileInfo.File.Seek(0, io.SeekCurrent)
+	if uint64(offset) == fileInfo.Header.IndexOffset {
+		return true
+	}
+	return false
+}
+
+func ReadLogSingle(fileInfo *FileInfo) bool {
+	var err error
+	if !IsLogsOffsetEnd(fileInfo) {
+		fileInfo.CurrentLog, err = ReadLog(fileInfo.File)
+		if err != nil {
+			fmt.Println("Error reading log:", fileInfo.CurrentLog.Key, err)
+			return false
+		}
+		return true
+	} else {
+		fileInfo.CurrentLog = nil
+		return false
+	}
+}
+func removeNilElements(filesInfo []*FileInfo) []*FileInfo {
+	result := make([]*FileInfo, 0, len(filesInfo))
+	for _, value := range filesInfo {
+		if value != nil {
+			result = append(result, value)
+		}
+	}
+	return result
+}
+
+func WriteLogToNewSSTable(file *os.File, log *Log) {
+
+}
+
+func MergeFiles(filesInfo []*FileInfo, file *os.File) {
+	//ucitavanje prvog loga iz svakog SSTable
+	for i := 0; i < len(filesInfo); i++ {
+		ReadLogSingle(filesInfo[i])
+	}
+
+	for len(filesInfo) > 0 {
+		minLogIndex := FindMinLog(filesInfo)
+		WriteLogToNewSSTable(file, filesInfo[minLogIndex].CurrentLog)
+		ReadLogSingle(filesInfo[minLogIndex])
+		filesInfo = removeNilElements(filesInfo)
+	}
+
+}
+
+/*
+func SizeTieredCompactionSingle(level int, sstableType string) {
 	files, err := GetAllFilesFromLevel("./Data/SSTables/"+sstableType, level, true)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	var finalLogs []*Log
+
+	var filesInfo []FileInfo
+
 	for i := 0; i < len(files); i++ {
-		file1, err := os.Open("./Data/SSTables/" + sstableType + "/" + files[i])
+		filesInfo[i].File, err = os.Open("./Data/SSTables/" + sstableType + "/" + files[i])
 		if err != nil {
-			fmt.Println("Error opening file:", err)
+			fmt.Println("Error opening file:", i, err)
 			return
 		}
-		tempLogs, _ := GetAllLogs(file1, sstableType)
-		for i := 0; i < len(tempLogs); i++ {
-			fmt.Println(string(tempLogs[i].Key))
+		filesInfo[i].Header, err = ReadHeader(filesInfo[i].File)
+		if err != nil {
+			fmt.Println("Error reading file header:", i, err)
+			return
 		}
-		file1.Close()
-		if i == 0 {
-			finalLogs = tempLogs
-			continue
-		}
-		finalLogs = Merge(finalLogs, tempLogs)
 	}
+
 	maxGeneration, _ := GetMaxGenerationFromLevel("./Data/SSTables/"+sstableType, level+1)
-	BuildSSTable(finalLogs, maxGeneration+1, level+1, sstableType)
+
+	WriteToFile(maxGeneration+1, level+1, "Data", sstableType, DataContent, &TOCData)
+	file, err := os.OpenFile("./Data/SSTables/"+sstableType+"/"+"Data"+"-"+strconv.Itoa(maxGeneration)+"-"+strconv.Itoa(level+1)+".bin", os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	// Data to append to the file
+	data := "This is the new content that will be appended.\n"
+
+	// Write the data to the file
+	_, err = file.WriteString(data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//BuildSSTable(finalLogs, maxGeneration+1, level+1, sstableType)
+	for i := 0; i < len(files); i++ {
+		filesInfo[i].File.Close()
+	}
 	DeleteFilesFromLevel(level, sstableType)
 	if maxGeneration+1 == LEVEL_TRASHOLD {
 		SizeTieredCompaction(level+1, sstableType)
 	}
-}
+}*/
