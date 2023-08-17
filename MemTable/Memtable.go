@@ -80,7 +80,7 @@ func (table *Memtable) Search(key string) *Log {
 // dobavi poslednju generaciju i najveci level za pravljenje SSTabla
 func getLastGen(numOfFiles string) int {
 	nameOfDir := strings.ToUpper(string(numOfFiles[0])) + numOfFiles[1:]
-	files, err := os.ReadDir("Data/SStables/" + nameOfDir) //read all files from Single/Multiple
+	files, err := os.ReadDir("Data/SSTables/" + nameOfDir) //read all files from Single/Multiple
 	if err != nil {
 		fmt.Println("Err when reading last generation")
 	}

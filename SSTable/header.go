@@ -25,14 +25,14 @@ func (header Header) HeaderSerialize() []byte {
 	return serialized.Bytes()
 }
 
-func DeserializeHeader(serializedHeader []byte) Header {
+func DeserializeHeader(serializedHeader []byte) *Header {
 
 	var logs = binary.LittleEndian.Uint64(serializedHeader[:8])
 	var bloom = binary.LittleEndian.Uint64(serializedHeader[8:16])
 	var summary = binary.LittleEndian.Uint64(serializedHeader[16:24])
 	var index = binary.LittleEndian.Uint64(serializedHeader[24:])
 
-	return Header{
+	return &Header{
 		LogsOffset:    logs,
 		BloomOffset:   bloom,
 		SummaryOffset: summary,
@@ -47,5 +47,5 @@ func ReadHeader(file *os.File) (*Header, error) {
 		return nil, err
 	}
 	header := DeserializeHeader(headerBytes)
-	return &header, nil
+	return header, nil
 }

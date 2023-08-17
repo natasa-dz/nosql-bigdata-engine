@@ -1,14 +1,22 @@
 package main
 
 import (
-	application "NAiSP/Application"
-	. "NAiSP/Menu"
+	. "NAiSP/Log"
+	"fmt"
+	"os"
+	"sort"
 )
 
+func SortData(entries []*Log) []*Log {
+	sort.Slice(entries, func(i, j int) bool {
+		return string(entries[i].Key) < string(entries[j].Key)
+	})
+	return entries
+}
 func main() {
-	choiceOfConfig := WriteAppInitializationMenu()
+	/*choiceOfConfig := WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
-	app.StartApp()
+	app.StartApp()*/
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}
@@ -54,46 +62,48 @@ func main() {
 	//----------------------------------------------------------------------------
 	//========================SSTABLE TESTS=======================================
 	// Test data for logs (assuming you have Log struct defined)
-	/*log1 := &Log{
+	log1 := &Log{
 		CRC:       123,
-		Timestamp: 1626723915,
+		Timestamp: 1626723939,
 		Tombstone: false,
-		KeySize:   5,
+		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key25"),
-		Value:     []byte("value1"),
+		Key:       []byte("key3"),
+		Value:     []byte("value5"),
 	}
 	log2 := &Log{
 		CRC:       456,
-		Timestamp: 1626723999,
+		Timestamp: 1626723950,
 		Tombstone: false,
-		KeySize:   5,
+		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key26"),
-		Value:     []byte("value1"),
+		Key:       []byte("key4"),
+		Value:     []byte("value5"),
 	}
 
 	log3 := &Log{
 		CRC:       789,
 		Timestamp: 1626723629,
 		Tombstone: false,
-		KeySize:   5,
+		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key27"),
+		Key:       []byte("key5"),
 		Value:     []byte("value1"),
 	}
 	log4 := &Log{
 		CRC:       789,
 		Timestamp: 1626721699,
 		Tombstone: false,
-		KeySize:   5,
+		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key23"),
-		Value:     []byte("value5"),
+		Key:       []byte("key6"),
+		Value:     []byte("value1"),
 	}
 
 	logs := []*Log{log1, log2, log3, log4}
-	SortData(logs)*/
+	SortData(logs)
+
+	//LSM.SizeTieredCompactionSingle(1, "Single")
 	// Call writeToMultipleFiles function
 	//BuildSSTableMultiple(logs, 2, 1)
 
@@ -158,12 +168,13 @@ func main() {
 	defer file3.Close()
 	defer file4.Close()*/
 	// Call writeToSingleFile function
-	/*err := BuildSSTableSingle(logs, 2, 1)
+	/*err := BuildSSTableSingle(logs, 2, 1, 10)
 	if err != nil {
 		fmt.Println("Error writing to a single file:", err)
 		return
 	}*/
-	/*file, err := os.Open("./Data/SSTables/Single/Data-2-1.bin")
+
+	file, err := os.Open("./Data/SSTables/Single/Data-1-2.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -171,43 +182,45 @@ func main() {
 	//Logs test
 	fmt.Println("LOGS TEST")
 	var data []*Log
-	header, _ := ReadHeader(file)
-	data, _ = ReadLogs(file, int64(header.LogsOffset), header.BloomOffset)
+	//header, _ := ReadHeader(file)
+	offsetEnd, err := file.Seek(0, os.SEEK_END)
+	data, _ = ReadLogs(file, int64(32), uint64(offsetEnd))
 
 	for i := 0; i < len(data); i++ {
 		fmt.Println(string(data[i].Key))
 		fmt.Println(string(data[i].Value))
 	}
+	/*
+		//Bloom test
+		fmt.Println("BLOOM TEST")
+		bloom := BloomFilter.ReadBloom(file, int64(header.BloomOffset))
+		fmt.Println(bloom.BitSlices)
+		fmt.Println(bloom.M)
+		fmt.Println(bloom.K)
+		fmt.Println(int64(header.IndexOffset))
+		fmt.Println(int64(header.SummaryOffset))
 
-	//Bloom test
-	fmt.Println("BLOOM TEST")
-	bloom := BloomFilter.ReadBloom(file, int64(header.BloomOffset))
-	fmt.Println(bloom.BitSlices)
-	fmt.Println(bloom.M)
-	fmt.Println(bloom.K)
-	fmt.Println(int64(header.IndexOffset))
-	fmt.Println(int64(header.SummaryOffset))
+		//Summary test
+		fmt.Println("SUMMARY TEST")
+		summary, _ := ReadSummary(file, int64(header.SummaryOffset))
 
-	//Summary test
-	fmt.Println("SUMMARY TEST")
-	summary, _ := ReadSummary(file, int64(header.SummaryOffset))
-
-	fmt.Println(summary.StartKey)
-	fmt.Println(summary.EndKey)
-	for i := 0; i < len(summary.Entries); i++ {
-		fmt.Println(string(summary.Entries[i].Key))
-		fmt.Println(summary.Entries[i].Offset)
-	}
+		fmt.Println(summary.StartKey)
+		fmt.Println(summary.EndKey)
+		for i := 0; i < len(summary.Entries); i++ {
+			fmt.Println(string(summary.Entries[i].Key))
+			fmt.Println(summary.Entries[i].Offset)
+		}*/
 	//Index test
-	fmt.Println("INDEX TEST")
-	indexEntries, _ := ReadIndex(file, int64(header.IndexOffset), int64(header.SummaryOffset))
+	/*fmt.Println("INDEX TEST")
+	offsetEnd, err := file.Seek(0, os.SEEK_END)
+	indexEntries, _ := ReadIndex(file, int64(0), offsetEnd)
 
 	for i := 0; i < len(indexEntries); i++ {
 		fmt.Println(string(indexEntries[i].Key))
 		fmt.Println(indexEntries[i].Offset)
-	}
+	}*/
 
-	defer file.Close()*/
+	defer file.Close()
 
 	//SizeTieredCompaction(1, "Single")*/
 }

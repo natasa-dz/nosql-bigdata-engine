@@ -72,13 +72,13 @@ func extractDataFromSSFile(numOfFiles string) []*Log {
 	if SSFile == nil { //prazan direktorijum
 		return nil
 	}
-	openedFile, err := os.Open("Data/SStables/" + strings.Title(numOfFiles) + "/" + SSFile.Name())
+	openedFile, err := os.Open("Data/SSTables/" + strings.Title(numOfFiles) + "/" + SSFile.Name())
 	if err != nil {
 		fmt.Println("Error opening SS file:", err)
 		return nil
 	}
 	defer openedFile.Close()
-	openedFileInfo, _ := os.Stat("Data/SStables/" + strings.Title(numOfFiles) + "/" + SSFile.Name())
+	openedFileInfo, _ := os.Stat("Data/SSTables/" + strings.Title(numOfFiles) + "/" + SSFile.Name())
 
 	if numOfFiles == "single" {
 		header, _ := ss.ReadHeader(openedFile)
@@ -93,7 +93,7 @@ func extractDataFromSSFile(numOfFiles string) []*Log {
 func getLatestSSTableFile(numOfFiles string) os.DirEntry {
 	var retVal os.DirEntry
 	numOfFiles = strings.Title(numOfFiles)
-	files, err := os.ReadDir("Data/SStables/" + numOfFiles + "/")
+	files, err := os.ReadDir("Data/SSTables/" + numOfFiles + "/")
 	if err != nil {
 		fmt.Println("ERR...Cannot gather all SStableFiles")
 		return nil

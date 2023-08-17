@@ -173,6 +173,72 @@ func ReadLog(file *os.File) (*Log, error) {
 	return &log, nil
 }
 
+func ReadLog2(file *os.File, log *Log) (*Log, error) {
+	//var log Log
+
+	// Read CRC
+	var crcBytes = make([]byte, CRC_SIZE)
+	_, err := file.Read(crcBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.CRC = binary.LittleEndian.Uint32(crcBytes)
+
+	// Read Timestamp
+	var timestampBytes = make([]byte, TIMESTAMP_SIZE)
+	_, err = file.Read(timestampBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.Timestamp = int64(binary.LittleEndian.Uint64(timestampBytes))
+
+	// Read Tombstone
+	var tombstoneByte = make([]byte, TOMBSTONE_SIZE)
+	_, err = file.Read(tombstoneByte)
+	if err != nil {
+		return nil, err
+	}
+	if tombstoneByte[0] == 1 {
+		log.Tombstone = true
+	} else {
+		log.Tombstone = false
+	}
+
+	// Read KeySize
+	var keySizeBytes = make([]byte, KEY_SIZE_SIZE)
+	_, err = file.Read(keySizeBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.KeySize = int64(binary.LittleEndian.Uint64(keySizeBytes))
+
+	// Read ValueSize
+	var valueSizeBytes = make([]byte, VALUE_SIZE_SIZE)
+	_, err = file.Read(valueSizeBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.ValueSize = int64(binary.LittleEndian.Uint64(valueSizeBytes))
+
+	// Read Key
+	var keyBytes = make([]byte, log.KeySize)
+	_, err = file.Read(keyBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.Key = keyBytes
+
+	// Read Value
+	var valueBytes = make([]byte, log.ValueSize)
+	_, err = file.Read(valueBytes)
+	if err != nil {
+		return nil, err
+	}
+	log.Value = valueBytes
+
+	return log, nil
+}
+
 func (l *Log) Equals(toCheck *Log) bool {
 	if string(l.Key) == string(toCheck.Key) && string(l.Value) == string(toCheck.Value) && l.CRC == toCheck.CRC {
 		return true

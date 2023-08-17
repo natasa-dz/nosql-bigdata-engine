@@ -1,2 +1,0 @@
-./Data/SSTables/Single/Data-1-1.bin
-./Data/SSTables/Single/Metadata-1-1.txt
