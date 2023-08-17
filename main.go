@@ -1,7 +1,10 @@
 package main
 
 import (
+	"NAiSP/BloomFilter"
+	"NAiSP/LSM"
 	. "NAiSP/Log"
+	. "NAiSP/SSTable"
 	"fmt"
 	"os"
 	"sort"
@@ -103,7 +106,7 @@ func main() {
 	logs := []*Log{log1, log2, log3, log4}
 	SortData(logs)
 
-	//LSM.SizeTieredCompactionSingle(1, "Single")
+	LSM.SizeTieredCompactionSingle(1, "Single", 3)
 	// Call writeToMultipleFiles function
 	//BuildSSTableMultiple(logs, 2, 1)
 
@@ -174,7 +177,7 @@ func main() {
 		return
 	}*/
 
-	file, err := os.Open("./Data/SSTables/Single/Data-1-2.bin")
+	file, err := os.Open("./Data/SSTables/Single/Data-2-2.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -182,45 +185,45 @@ func main() {
 	//Logs test
 	fmt.Println("LOGS TEST")
 	var data []*Log
-	//header, _ := ReadHeader(file)
-	offsetEnd, err := file.Seek(0, os.SEEK_END)
-	data, _ = ReadLogs(file, int64(32), uint64(offsetEnd))
+	header, _ := ReadHeader(file)
+	fmt.Println(header.LogsOffset)
+	fmt.Println(header.BloomOffset)
+	fmt.Println(header.IndexOffset)
+	fmt.Println(header.SummaryOffset)
+	//offsetEnd, err := file.Seek(0, os.SEEK_END)
+	data, _ = ReadLogs(file, int64(32), uint64(header.BloomOffset))
 
 	for i := 0; i < len(data); i++ {
 		fmt.Println(string(data[i].Key))
 		fmt.Println(string(data[i].Value))
 	}
-	/*
-		//Bloom test
-		fmt.Println("BLOOM TEST")
-		bloom := BloomFilter.ReadBloom(file, int64(header.BloomOffset))
-		fmt.Println(bloom.BitSlices)
-		fmt.Println(bloom.M)
-		fmt.Println(bloom.K)
-		fmt.Println(int64(header.IndexOffset))
-		fmt.Println(int64(header.SummaryOffset))
 
-		//Summary test
-		fmt.Println("SUMMARY TEST")
-		summary, _ := ReadSummary(file, int64(header.SummaryOffset))
+	//Bloom test
+	fmt.Println("BLOOM TEST")
+	bloom := BloomFilter.ReadBloom(file, int64(header.BloomOffset))
+	fmt.Println(bloom.BitSlices)
+	fmt.Println(bloom.M)
+	fmt.Println(bloom.K)
 
-		fmt.Println(summary.StartKey)
-		fmt.Println(summary.EndKey)
-		for i := 0; i < len(summary.Entries); i++ {
-			fmt.Println(string(summary.Entries[i].Key))
-			fmt.Println(summary.Entries[i].Offset)
-		}*/
+	//Summary test
+	fmt.Println("SUMMARY TEST")
+	summary, _ := ReadSummary(file, int64(header.SummaryOffset))
+
+	fmt.Println(summary.StartKey)
+	fmt.Println(summary.EndKey)
+	for i := 0; i < len(summary.Entries); i++ {
+		fmt.Println(string(summary.Entries[i].Key))
+		fmt.Println(summary.Entries[i].Offset)
+	}
 	//Index test
-	/*fmt.Println("INDEX TEST")
-	offsetEnd, err := file.Seek(0, os.SEEK_END)
-	indexEntries, _ := ReadIndex(file, int64(0), offsetEnd)
+	fmt.Println("INDEX TEST")
+	//offsetEnd, err := file.Seek(0, os.SEEK_END)
+	indexEntries, _ := ReadIndex(file, int64(header.IndexOffset), int64(header.SummaryOffset))
 
 	for i := 0; i < len(indexEntries); i++ {
-		fmt.Println(string(indexEntries[i].Key))
+		fmt.Println(indexEntries[i].Key)
 		fmt.Println(indexEntries[i].Offset)
-	}*/
+	}
 
 	defer file.Close()
-
-	//SizeTieredCompaction(1, "Single")*/
 }

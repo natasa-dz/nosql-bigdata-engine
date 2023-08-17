@@ -3,6 +3,7 @@ package SSTable
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
 )
@@ -46,6 +47,7 @@ func ReadHeader(file *os.File) (*Header, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(headerBytes)
 	header := DeserializeHeader(headerBytes)
 	return header, nil
 }
