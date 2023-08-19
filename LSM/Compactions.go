@@ -21,7 +21,7 @@ const (
 	LEVEL_TRASHOLD = 3
 )
 
-func Merge(data1 []*Log, data2 []*Log) []*Log {
+/*func Merge(data1 []*Log, data2 []*Log) []*Log {
 	data1Len := len(data1)
 	data2Len := len(data2)
 	var i int = 0
@@ -90,7 +90,7 @@ func Merge(data1 []*Log, data2 []*Log) []*Log {
 	}
 	return mergedData
 
-}
+}*/
 
 func GetAllFilesFromLevel(dirPath string, level int, onlyData bool) ([]string, error) {
 	var files []string
@@ -173,25 +173,39 @@ type FileInfo struct {
 	Header     *Header
 }
 
-func FindMinLog(filesInfo []*FileInfo) int {
+func FindMinLog(filesInfo []*FileInfo, fileType string) int {
 	minLog := filesInfo[0].CurrentLog
 	minIndex := 0
 	for i := 1; i < len(filesInfo); i++ {
 		if string(filesInfo[i].CurrentLog.Key) < string(minLog.Key) {
 			minLog = filesInfo[i].CurrentLog
 			minIndex = i
-		} else if string(filesInfo[i].CurrentLog.Key) == string(minLog.Key) && filesInfo[i].CurrentLog.Timestamp > minLog.Timestamp {
-			ReadLogSingle(filesInfo[minIndex])
-			minLog = filesInfo[i].CurrentLog
-			minIndex = i
+		} else if string(filesInfo[i].CurrentLog.Key) == string(minLog.Key) {
+			if filesInfo[i].CurrentLog.Timestamp > minLog.Timestamp {
+				if fileType == "Single" {
+					ReadLogSingle(filesInfo[minIndex])
+				} else {
+					ReadLogMultiple(filesInfo[minIndex])
+				}
+				minLog = filesInfo[i].CurrentLog
+				minIndex = i
+			} else {
+				//vamo udje kad min>current.time a usput su keys jednaki
+				if fileType == "Single" {
+					ReadLogSingle(filesInfo[i])
+				} else {
+					ReadLogMultiple(filesInfo[i])
+				}
+			}
+
 		}
 	}
 	return minIndex
 }
 
-func IsLogsOffsetEnd(fileInfo *FileInfo) bool {
+func IsLogsOffsetEnd(fileInfo *FileInfo, endOffset int64) bool {
 	offset, _ := fileInfo.File.Seek(0, io.SeekCurrent)
-	if uint64(offset) == fileInfo.Header.BloomOffset {
+	if offset == endOffset {
 		return true
 	}
 	return false
@@ -199,9 +213,8 @@ func IsLogsOffsetEnd(fileInfo *FileInfo) bool {
 
 func ReadLogSingle(fileInfo *FileInfo) bool {
 	var err error
-	if !IsLogsOffsetEnd(fileInfo) {
+	if !IsLogsOffsetEnd(fileInfo, int64(fileInfo.Header.BloomOffset)) {
 		fileInfo.CurrentLog, err = ReadLog(fileInfo.File)
-		//ReadLog2(fileInfo.File, &fileInfo.CurrentLog)
 		if err != nil {
 			fmt.Println("Error reading log:", fileInfo.CurrentLog.Key, err)
 			return false
@@ -212,6 +225,26 @@ func ReadLogSingle(fileInfo *FileInfo) bool {
 		return false
 	}
 }
+
+func ReadLogMultiple(fileInfo *FileInfo) bool {
+	var err error
+	offsetTemp, _ := fileInfo.File.Seek(0, io.SeekCurrent)
+	offsetEnd, err := fileInfo.File.Seek(0, os.SEEK_END)
+	fileInfo.File.Seek(offsetTemp, io.SeekStart)
+	if !IsLogsOffsetEnd(fileInfo, offsetEnd) {
+		fileInfo.CurrentLog, err = ReadLog(fileInfo.File)
+		if err != nil {
+			fmt.Println("Error reading log:", fileInfo.CurrentLog.Key, err)
+			return false
+		}
+		return true
+	} else {
+		fmt.Println("Nil", string(fileInfo.CurrentLog.Key))
+		fileInfo.CurrentLog = nil
+		return false
+	}
+}
+
 func RemoveNilElements(filesInfo []*FileInfo) []*FileInfo {
 	result := make([]*FileInfo, 0, len(filesInfo))
 	for _, value := range filesInfo {
@@ -222,64 +255,78 @@ func RemoveNilElements(filesInfo []*FileInfo) []*FileInfo {
 	return result
 }
 
-func WriteLogToSingleSSTable(file *os.File, log *Log) *int64 {
+func WriteLog(file *os.File, log *Log) *int64 {
 	_, err := file.Write(log.Serialize())
 	offsetEnd, err := file.Seek(0, os.SEEK_END)
 	if err != nil {
 		return nil
 	}
-	fmt.Println("ovde")
 	return &offsetEnd
 }
-func WriteIndex(file *os.File, log *Log, logOffset *int64) {
+func WriteIndexEntry(file *os.File, log *Log, logOffset *int64) {
 	indexEntry := &IndexEntry{
 		KeySize: uint64(log.KeySize),
 		Key:     string(log.Key),
 		Offset:  uint64(*logOffset),
 	}
+	fmt.Println(log.KeySize, string(log.Key), *logOffset)
 	_, err := file.Write(indexEntry.SerializeIndexEntry())
 	if err != nil {
 		return
 	}
 }
 
-func MergeFiles(filesInfo []*FileInfo, mainFile *os.File, indexFile *os.File) *int {
-	//ucitavanje prvog loga iz svakog SSTable
+func MergeFiles(filesInfo []*FileInfo, mainFile *os.File, indexFile *os.File, fileType string) *int {
+	//load first log from every SSTable
 	for i := 0; i < len(filesInfo); i++ {
-		filesInfo[i].File.Seek(int64(filesInfo[i].Header.LogsOffset), io.SeekStart)
-		ReadLogSingle(filesInfo[i])
+		if fileType == "Single" {
+			filesInfo[i].File.Seek(int64(filesInfo[i].Header.LogsOffset), io.SeekStart)
+			ReadLogSingle(filesInfo[i])
+		} else {
+			ReadLogMultiple(filesInfo[i])
+		}
 	}
-	//upis praznog prostora za header
-	data := make([]byte, 32)
-	mainFile.Write(data)
-
-	numOfElements := 0
 	var currentLogOffset int64
-	currentLogOffset = 32
+	numOfElements := 0
+	if fileType == "Single" {
+		//write empty bytes for header
+		data := make([]byte, 32)
+		mainFile.Write(data)
+		currentLogOffset = 32
+	} else {
+		currentLogOffset = 0
+	}
 
 	for len(filesInfo) > 0 {
-		minLogIndex := FindMinLog(filesInfo)
-		WriteIndex(indexFile, filesInfo[minLogIndex].CurrentLog, &currentLogOffset)
-		currentLogOffset = *WriteLogToSingleSSTable(mainFile, filesInfo[minLogIndex].CurrentLog)
-		ReadLogSingle(filesInfo[minLogIndex])
+		minLogIndex := FindMinLog(filesInfo, fileType)
+		WriteIndexEntry(indexFile, filesInfo[minLogIndex].CurrentLog, &currentLogOffset)
+		currentLogOffset = *WriteLog(mainFile, filesInfo[minLogIndex].CurrentLog)
+		if fileType == "Single" {
+			ReadLogSingle(filesInfo[minLogIndex])
+		} else {
+			ReadLogMultiple(filesInfo[minLogIndex])
+		}
 		filesInfo = RemoveNilElements(filesInfo)
 		numOfElements++
 	}
 	return &numOfElements
 }
 
-func WriteBloom(mainFile *os.File, numOfLogs *int, offsetEnd *uint64) (*Log, *Log) {
+func WriteBloom(mainFile *os.File, bloomFile *os.File, numOfLogs *int, offsetEnd *uint64, fileType string) (*Log, *Log) {
 	bloom := Bloom2{}
 	bloom.InitializeEmptyBloom2(*numOfLogs, 0.1)
 
-	mainFile.Seek(32, io.SeekStart)
-	var loaded *Log
-	var offset int64
-	offset = 32
 	counter := 1
+	var offset int64
+	if fileType == "Single" {
+		offset, _ = mainFile.Seek(32, io.SeekStart)
+	} else {
+		offset, _ = mainFile.Seek(0, io.SeekStart)
+	}
+	var loaded *Log
 	var firstLog *Log
 	var lastLog *Log
-	//read until the end of logs
+	//read logs and create bloom filter
 	for offset < int64(*offsetEnd) {
 		loaded, _ = ReadLog(mainFile)
 		if counter == 1 {
@@ -292,15 +339,16 @@ func WriteBloom(mainFile *os.File, numOfLogs *int, offsetEnd *uint64) (*Log, *Lo
 		bloom.Add(loaded.Key)
 		counter++
 	}
-	_, err := mainFile.Write(bloom.Serialize().Bytes())
-	if err != nil {
-		return nil, nil
+	if fileType == "Single" {
+		mainFile.Write(bloom.Serialize().Bytes())
+	} else {
+		bloomFile.Write(bloom.Serialize().Bytes())
 	}
 	return firstLog, lastLog
 }
 
-func RewriteIndex(mainFile *os.File, level int, sstableType string, maxGeneration int) {
-	data, err := ioutil.ReadFile("./Data/SSTables/" + sstableType + "/" + "Index" + "-" + strconv.Itoa(maxGeneration+1) + "-" + strconv.Itoa(level+1) + ".bin")
+func RewriteIndex(mainFile *os.File, level *int, sstableType *string, maxGeneration *int) {
+	data, err := ioutil.ReadFile("./Data/SSTables/" + *sstableType + "/" + "Index" + "-" + strconv.Itoa(*maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -310,28 +358,31 @@ func RewriteIndex(mainFile *os.File, level int, sstableType string, maxGeneratio
 	}
 }
 
-func WriteSummary(mainFile *os.File, header *Header, summaryBlockSize int, firstLog *Log, lastLog *Log) {
-	var loaded *IndexEntry
-
-	//read until the end of logs
-	counter := 1
-	mainFile.Seek(int64(header.SummaryOffset), io.SeekStart)
+func WriteSummaryHeaderCompaction(mainFile *os.File, firstLog *Log, lastLog *Log, startOffset uint64) {
+	mainFile.Seek(int64(startOffset), io.SeekStart)
 	var SummaryContent = new(bytes.Buffer)
 	binary.Write(SummaryContent, binary.LittleEndian, firstLog.KeySize) //min key
 	binary.Write(SummaryContent, binary.LittleEndian, firstLog.Key)
 	binary.Write(SummaryContent, binary.LittleEndian, lastLog.KeySize) //max key
 	binary.Write(SummaryContent, binary.LittleEndian, lastLog.Key)
-	fmt.Println("HEADER", SummaryContent.Bytes())
 	mainFile.Write(SummaryContent.Bytes())
+}
 
+func WriteSummarySingle(mainFile *os.File, header *Header, summaryBlockSize int, firstLog *Log, lastLog *Log) {
+
+	WriteSummaryHeaderCompaction(mainFile, firstLog, lastLog, header.SummaryOffset)
+
+	counter := 1
+	var loaded *IndexEntry
 	offset, _ := mainFile.Seek(int64(header.IndexOffset), io.SeekStart)
+
+	//read index offsets and write to summary
 	for uint64(offset) < header.SummaryOffset {
 		loaded, _ = ReadIndexEntry(mainFile, offset)
 		offsetTemp, _ := mainFile.Seek(0, io.SeekCurrent)
 
-		if counter == summaryBlockSize {
-			off, _ := mainFile.Seek(0, io.SeekEnd)
-			fmt.Println("SUMM", off)
+		if (counter % summaryBlockSize) == 0 {
+			mainFile.Seek(0, io.SeekEnd)
 			loaded.Offset = uint64(offset)
 			mainFile.Write(loaded.SerializeIndexEntry())
 		}
@@ -340,76 +391,160 @@ func WriteSummary(mainFile *os.File, header *Header, summaryBlockSize int, first
 		counter++
 	}
 }
+func WriteSummaryMultiple(indexFile *os.File, summaryFile *os.File, summaryBlockSize int, firstLog *Log, lastLog *Log) {
 
-func SizeTieredCompactionSingle(level int, sstableType string, summaryBlockSize int) {
-	files, err := GetAllFilesFromLevel("./Data/SSTables/"+sstableType, level, true)
+	WriteSummaryHeaderCompaction(summaryFile, firstLog, lastLog, 0)
+
+	counter := 1
+	var loaded *IndexEntry
+	offsetEnd, _ := indexFile.Seek(0, io.SeekEnd)
+	offset, _ := indexFile.Seek(0, io.SeekStart)
+
+	//read index offsets and write to summary
+	for offset < offsetEnd {
+		loaded, _ = ReadIndexEntry(indexFile, offset)
+
+		if (counter%summaryBlockSize) == 0 || counter == 1 {
+			loaded.Offset = uint64(offset)
+			summaryFile.Write(loaded.SerializeIndexEntry())
+		}
+		offset, _ = indexFile.Seek(0, io.SeekCurrent)
+
+		counter++
+	}
+}
+
+func LoadFilesFromLevel(level *int, sstableType *string) []*FileInfo {
+	files, err := GetAllFilesFromLevel("./Data/SSTables/"+*sstableType, *level, true)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil
 	}
-
+	//open files and load their headers
 	filesInfo := make([]*FileInfo, len(files))
-
 	for i := 0; i < len(files); i++ {
+		fmt.Println("File- ", files[i])
 		fileInfo := FileInfo{}
-		fileInfo.File, err = os.Open("./Data/SSTables/" + sstableType + "/" + files[i])
-
+		fileInfo.File, err = os.Open("./Data/SSTables/" + *sstableType + "/" + files[i])
 		if err != nil {
 			fmt.Println("Error opening file:", i, err)
-			return
+			return nil
 		}
-		fileInfo.Header, err = ReadHeader(fileInfo.File)
-		if err != nil {
-			fmt.Println("Error reading file header:", i, err)
-			return
+		if *sstableType == "Single" {
+			fileInfo.Header, err = ReadHeader(fileInfo.File)
+			if err != nil {
+				fmt.Println("Error reading file header:", i, err)
+				return nil
+			}
 		}
+
 		filesInfo[i] = &fileInfo
 	}
+	return filesInfo
+}
 
-	maxGeneration, _ := GetMaxGenerationFromLevel("./Data/SSTables/"+sstableType, level+1)
-
-	mainFile, err := os.OpenFile("./Data/SSTables/"+sstableType+"/"+"Data"+"-"+strconv.Itoa(maxGeneration+1)+"-"+strconv.Itoa(level+1)+".bin", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
+func OpenDataAndIndexFiles(level *int, sstableType *string, maxGeneration *int) (*os.File, *os.File) {
+	mainFile, err := os.OpenFile("./Data/SSTables/"+*sstableType+"/"+"Data"+"-"+strconv.Itoa(*maxGeneration+1)+"-"+strconv.Itoa(*level+1)+".bin", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	indexFile, err := os.OpenFile("./Data/SSTables/"+sstableType+"/"+"Index"+"-"+strconv.Itoa(maxGeneration+1)+"-"+strconv.Itoa(level+1)+".bin", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
+	indexFile, err := os.OpenFile("./Data/SSTables/"+*sstableType+"/"+"Index"+"-"+strconv.Itoa(*maxGeneration+1)+"-"+strconv.Itoa(*level+1)+".bin", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return mainFile, indexFile
+}
+func OpenFile(level *int, sstableType *string, maxGeneration *int, fileType string, TOCData *string) *os.File {
+	mainFile, err := os.OpenFile("./Data/SSTables/"+*sstableType+"/"+fileType+"-"+strconv.Itoa(*maxGeneration+1)+"-"+strconv.Itoa(*level+1)+".bin", os.O_RDWR|os.O_CREATE, 0666)
+	*TOCData += "./Data/SSTables/" + *sstableType + "/" + fileType + "-" + strconv.Itoa(*maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin\n"
+	if err != nil {
+		log.Fatal(err)
+	}
+	return mainFile
+}
+func OpenFileWrite(level *int, sstableType *string, maxGeneration *int, fileType string, TOCData *string) *os.File {
+	mainFile, err := os.OpenFile("./Data/SSTables/"+*sstableType+"/"+fileType+"-"+strconv.Itoa(*maxGeneration+1)+"-"+strconv.Itoa(*level+1)+".bin", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	*TOCData += "./Data/SSTables/" + *sstableType + "/" + fileType + "-" + strconv.Itoa(*maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin\n"
+	if err != nil {
+		log.Fatal(err)
+	}
+	return mainFile
+}
+
+func SizeTieredCompactionMultiple(level *int, sstableType *string, summaryBlockSize *int) {
+	filesInfo := LoadFilesFromLevel(level, sstableType)
+	maxGeneration, _ := GetMaxGenerationFromLevel("./Data/SSTables/"+*sstableType, *level+1)
+	TOCData := ""
+	dataFile := OpenFile(level, sstableType, &maxGeneration, "Data", &TOCData)
+	indexFile := OpenFile(level, sstableType, &maxGeneration, "Index", &TOCData)
+	summaryFile := OpenFile(level, sstableType, &maxGeneration, "Summary", &TOCData)
+	bloomFile := OpenFile(level, sstableType, &maxGeneration, "Bloom", &TOCData)
+	//metadataFile := OpenFile(level, sstableType, &maxGeneration, "Metadata", &TOCData)
+
+	numOfLogs := MergeFiles(filesInfo, dataFile, indexFile, "Multiple")
+
+	offsetEnd, _ := dataFile.Seek(0, os.SEEK_END)
+	offsetEndUint64 := uint64(offsetEnd)
+	firstLog, lastLog := WriteBloom(dataFile, bloomFile, numOfLogs, &offsetEndUint64, "Multiple")
+
+	fmt.Println("first", string(firstLog.Key))
+	fmt.Println("last", string(lastLog.Key))
+	WriteSummaryMultiple(indexFile, summaryFile, *summaryBlockSize, firstLog, lastLog)
+
+	//metadata
+
+	for i := 0; i < len(filesInfo); i++ {
+		filesInfo[i].File.Close()
+	}
+	WriteToTxtFile(maxGeneration+1, *level+1, "TOC", *sstableType, TOCData, nil)
+
+	//DeleteFilesFromLevel(*level, *sstableType)
+	if maxGeneration+1 == LEVEL_TRASHOLD {
+		*level++
+		SizeTieredCompactionMultiple(level, sstableType, summaryBlockSize)
+	}
+}
+
+func SizeTieredCompactionSingle(level *int, sstableType *string, summaryBlockSize *int) {
+	filesInfo := LoadFilesFromLevel(level, sstableType)
+	maxGeneration, _ := GetMaxGenerationFromLevel("./Data/SSTables/"+*sstableType, *level+1)
+	mainFile, indexFile := OpenDataAndIndexFiles(level, sstableType, &maxGeneration)
+	TOCData := "./Data/SSTables/" + *sstableType + "/" + "Data" + "-" + strconv.Itoa(maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin\n"
+	TOCData += "./Data/SSTables/" + *sstableType + "/" + "Metadata" + "-" + strconv.Itoa(maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin\n"
+
 	header := Header{}
 	header.LogsOffset = 32
-	numOfLogs := MergeFiles(filesInfo, mainFile, indexFile)
+	numOfLogs := MergeFiles(filesInfo, mainFile, indexFile, "Single")
 	OffsetEnd, _ := mainFile.Seek(0, os.SEEK_END)
 	header.BloomOffset = uint64(OffsetEnd)
 
-	firstLog, lastLog := WriteBloom(mainFile, numOfLogs, &header.BloomOffset)
+	firstLog, lastLog := WriteBloom(mainFile, nil, numOfLogs, &header.BloomOffset, "Single")
 	OffsetEnd, _ = mainFile.Seek(0, os.SEEK_END)
 	header.IndexOffset = uint64(OffsetEnd)
 
 	indexFile.Close()
-	RewriteIndex(mainFile, level, sstableType, maxGeneration)
+	RewriteIndex(mainFile, level, sstableType, &maxGeneration)
 	OffsetEnd, _ = mainFile.Seek(0, os.SEEK_END)
 	header.SummaryOffset = uint64(OffsetEnd)
 
 	mainFile.Close()
-	mainFile, err = os.OpenFile("./Data/SSTables/"+sstableType+"/"+"Data"+"-"+strconv.Itoa(maxGeneration+1)+"-"+strconv.Itoa(level+1)+".bin", os.O_RDWR|os.O_APPEND, 0666)
-
+	mainFile, _ = os.OpenFile("./Data/SSTables/"+*sstableType+"/"+"Data"+"-"+strconv.Itoa(maxGeneration+1)+"-"+strconv.Itoa(*level+1)+".bin", os.O_RDWR, 0666)
 	mainFile.Seek(0, 0)
-
-	// Write the new data to overwrite the existing content
 	mainFile.Write(header.HeaderSerialize())
 
-	WriteSummary(mainFile, &header, summaryBlockSize, firstLog, lastLog)
+	WriteSummarySingle(mainFile, &header, *summaryBlockSize, firstLog, lastLog)
 
-	//TOC pokupiti
 	//metadata
 
-	for i := 0; i < len(files); i++ {
+	for i := 0; i < len(filesInfo); i++ {
 		filesInfo[i].File.Close()
 	}
-	//DeleteFilesFromLevel(level, sstableType)
+	WriteToTxtFile(maxGeneration+1, *level+1, "TOC", *sstableType, TOCData, nil)
+	os.Remove("./Data/SSTables/" + *sstableType + "/" + "Index" + "-" + strconv.Itoa(maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin")
+	//DeleteFilesFromLevel(*level, *sstableType)
 	if maxGeneration+1 == LEVEL_TRASHOLD {
-		SizeTieredCompactionSingle(level+1, sstableType, summaryBlockSize)
+		*level++
+		SizeTieredCompactionSingle(level, sstableType, summaryBlockSize)
 	}
 }
