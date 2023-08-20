@@ -1,8 +1,9 @@
 package main
 
 import (
-	"NAiSP/LSM"
+	application "NAiSP/Application"
 	. "NAiSP/Log"
+	menu "NAiSP/Menu"
 	"sort"
 )
 
@@ -13,9 +14,9 @@ func SortData(entries []*Log) []*Log {
 	return entries
 }
 func main() {
-	/*choiceOfConfig := WriteAppInitializationMenu()
+	choiceOfConfig := menu.WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
-	app.StartApp()*/
+	app.StartApp()
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}
@@ -63,16 +64,16 @@ func main() {
 	// Test data for logs (assuming you have Log struct defined)
 	log1 := &Log{
 		CRC:       123,
-		Timestamp: 1096721699,
+		Timestamp: 1199721698,
 		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key7"),
-		Value:     []byte("value9"),
+		Key:       []byte("key1"),
+		Value:     []byte("value2"),
 	}
 	log2 := &Log{
 		CRC:       456,
-		Timestamp: 1196721699,
+		Timestamp: 1199721699,
 		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
@@ -82,36 +83,36 @@ func main() {
 
 	log3 := &Log{
 		CRC:       789,
-		Timestamp: 1196721699,
-		Tombstone: true,
+		Timestamp: 1169721699,
+		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key5"),
-		Value:     []byte("value5"),
+		Key:       []byte("key8"),
+		Value:     []byte("value1"),
 	}
 	log4 := &Log{
 		CRC:       789,
-		Timestamp: 1159721699,
+		Timestamp: 1929721699,
 		Tombstone: true,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key4"),
-		Value:     []byte("value9"),
+		Key:       []byte("key7"),
+		Value:     []byte("value1"),
 	}
 
 	logs := []*Log{log1, log2, log3, log4}
 	SortData(logs)
 
-	var level int
+	/*var level int
 	var sstableType string
 	var summaryBlockSIze int
 	level = 2
 	sstableType = "Multiple"
-	summaryBlockSIze = 3
+	summaryBlockSIze = 3*/
 	//LSM.SizeTieredCompactionSingle(&level, &sstableType, &summaryBlockSIze)
-	LSM.SizeTieredCompactionMultiple(&level, &sstableType, &summaryBlockSIze)
+	//LSM.SizeTieredCompactionMultiple(&level, &sstableType, &summaryBlockSIze)
 	// Call writeToMultipleFiles function
-	//BuildSSTableMultiple(logs, 2, 2, 3)
+	//SSTable.BuildSSTableMultiple(logs, 2, 2, 3)
 
 	/*file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")
 	if err != nil {

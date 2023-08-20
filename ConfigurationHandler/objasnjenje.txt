@@ -10,4 +10,6 @@
   "CacheSize": velicina cache strukture
   "MenuPaginationSize": u slucaju puno rezultata ovo ce biti broj logova koji ce se prikazivati po stranici u meniju
   "NumOfSummarySegmentLogs": na svaki ovaj broj ce ici po jedan zapis u summary - u varijanti (kljuc:offset u index fajlu)
+  "MaxNumOfLSMLevels": broj levela LSM stabla posle kog se vise ne radi kompakcija
+  "MaxNumOfSSTablesPerLevel" : broj koji kad level LSM stabla dostigne pokrece se kompakcija
 }

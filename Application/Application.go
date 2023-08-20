@@ -3,6 +3,7 @@ package Application
 import (
 	cache "NAiSP/Cache"
 	config "NAiSP/ConfigurationHandler"
+	"NAiSP/LSM"
 	. "NAiSP/Log"
 	memtable "NAiSP/MemTable"
 	menu "NAiSP/Menu"
@@ -54,6 +55,13 @@ func (app *Application) StartApp() {
 				app.NumOfWalInserts++
 			} else {
 				menu.OutOfTokensNotification()
+			}
+		} else if userInput == "6" {
+			levelNum := menu.CompactionMenu(app.ConfigurationData.MaxNumOfLSMLevels - 1)
+			if app.ConfigurationData.NumOfFiles == "single" {
+				LSM.SizeTieredCompactionSingle(&levelNum, &app.ConfigurationData.NumOfSummarySegmentLogs, &app.ConfigurationData.MaxNumOfSSTablesPerLevel, &app.ConfigurationData.MaxNumOfLSMLevels)
+			} else {
+				LSM.SizeTieredCompactionMultiple(&levelNum, &app.ConfigurationData.NumOfSummarySegmentLogs, &app.ConfigurationData.MaxNumOfSSTablesPerLevel, &app.ConfigurationData.MaxNumOfLSMLevels)
 			}
 		}
 	}

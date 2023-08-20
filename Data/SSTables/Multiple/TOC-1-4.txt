@@ -1,0 +1,5 @@
+./Data/SSTables/Multiple/Data-1-4.bin
+./Data/SSTables/Multiple/Index-1-4.bin
+./Data/SSTables/Multiple/Summary-1-4.bin
+./Data/SSTables/Multiple/Bloom-1-4.bin
+./Data/SSTables/Multiple/Metadata-1-4.txt
