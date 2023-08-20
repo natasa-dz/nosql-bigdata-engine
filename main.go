@@ -1,12 +1,8 @@
 package main
 
 import (
-	"NAiSP/BloomFilter"
 	"NAiSP/LSM"
 	. "NAiSP/Log"
-	. "NAiSP/SSTable"
-	"fmt"
-	"os"
 	"sort"
 )
 
@@ -67,40 +63,40 @@ func main() {
 	// Test data for logs (assuming you have Log struct defined)
 	log1 := &Log{
 		CRC:       123,
-		Timestamp: 1156721699,
+		Timestamp: 1096721699,
 		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key2"),
-		Value:     []byte("value5"),
+		Key:       []byte("key7"),
+		Value:     []byte("value9"),
 	}
 	log2 := &Log{
 		CRC:       456,
-		Timestamp: 1536721699,
+		Timestamp: 1196721699,
 		Tombstone: false,
+		KeySize:   4,
+		ValueSize: 6,
+		Key:       []byte("key3"),
+		Value:     []byte("value9"),
+	}
+
+	log3 := &Log{
+		CRC:       789,
+		Timestamp: 1196721699,
+		Tombstone: true,
 		KeySize:   4,
 		ValueSize: 6,
 		Key:       []byte("key5"),
 		Value:     []byte("value5"),
 	}
-
-	log3 := &Log{
-		CRC:       789,
-		Timestamp: 1926721699,
-		Tombstone: true,
-		KeySize:   4,
-		ValueSize: 6,
-		Key:       []byte("key7"),
-		Value:     []byte("value1"),
-	}
 	log4 := &Log{
 		CRC:       789,
-		Timestamp: 1226721699,
+		Timestamp: 1159721699,
 		Tombstone: true,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key9"),
-		Value:     []byte("value1"),
+		Key:       []byte("key4"),
+		Value:     []byte("value9"),
 	}
 
 	logs := []*Log{log1, log2, log3, log4}
@@ -109,15 +105,15 @@ func main() {
 	var level int
 	var sstableType string
 	var summaryBlockSIze int
-	level = 1
+	level = 2
 	sstableType = "Multiple"
 	summaryBlockSIze = 3
 	//LSM.SizeTieredCompactionSingle(&level, &sstableType, &summaryBlockSIze)
 	LSM.SizeTieredCompactionMultiple(&level, &sstableType, &summaryBlockSIze)
 	// Call writeToMultipleFiles function
-	//BuildSSTableMultiple(logs, 4, 1, 3)
+	//BuildSSTableMultiple(logs, 2, 2, 3)
 
-	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")
+	/*file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -179,9 +175,9 @@ func main() {
 	defer file.Close()
 	defer file2.Close()
 	defer file3.Close()
-	defer file4.Close()
+	defer file4.Close()*/
 	// Call writeToSingleFile function
-	/*err := BuildSSTableSingle(logs, 2, 1, 10)
+	/*err := BuildSSTableSingle(logs, 4, 1, 3)
 	if err != nil {
 		fmt.Println("Error writing to a single file:", err)
 		return

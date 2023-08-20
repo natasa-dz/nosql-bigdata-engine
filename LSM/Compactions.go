@@ -5,6 +5,7 @@ import (
 	. "NAiSP/SSTable"
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +13,7 @@ import (
 
 	. "NAiSP/BloomFilter"
 	//"log"
+	. "NAiSP/merkleTree"
 	"os"
 	"strconv"
 	"strings"
@@ -363,7 +365,7 @@ func MergeFiles(filesInfo []*FileInfo, mainFile *os.File, indexFile *os.File, fi
 	return &numOfElements
 }
 
-func WriteBloom(mainFile *os.File, bloomFile *os.File, numOfLogs *int, offsetEnd *uint64, fileType string) (*Log, *Log) {
+func WriteBloom(mainFile *os.File, bloomFile *os.File, numOfLogs *int, offsetEnd *uint64, fileType string, leafNodes *[]*Node) (*Log, *Log) {
 	bloom := Bloom2{}
 	bloom.InitializeEmptyBloom2(*numOfLogs, 0.1)
 
@@ -380,6 +382,7 @@ func WriteBloom(mainFile *os.File, bloomFile *os.File, numOfLogs *int, offsetEnd
 	//read logs and create bloom filter
 	for offset < int64(*offsetEnd) {
 		loaded, _ = ReadLog(mainFile)
+		AppendLog(loaded, leafNodes)
 		if counter == 1 {
 			firstLog = loaded
 		}
@@ -432,7 +435,7 @@ func WriteSummarySingle(mainFile *os.File, header *Header, summaryBlockSize int,
 		loaded, _ = ReadIndexEntry(mainFile, offset)
 		offsetTemp, _ := mainFile.Seek(0, io.SeekCurrent)
 
-		if (counter % summaryBlockSize) == 0 {
+		if (counter%summaryBlockSize) == 0 || counter == 1 {
 			mainFile.Seek(0, io.SeekEnd)
 			loaded.Offset = uint64(offset)
 			mainFile.Write(loaded.SerializeIndexEntry())
@@ -531,26 +534,25 @@ func SizeTieredCompactionMultiple(level *int, sstableType *string, summaryBlockS
 	indexFile := OpenFile(level, sstableType, &maxGeneration, "Index", &TOCData)
 	summaryFile := OpenFile(level, sstableType, &maxGeneration, "Summary", &TOCData)
 	bloomFile := OpenFile(level, sstableType, &maxGeneration, "Bloom", &TOCData)
-	//metadataFile := OpenFile(level, sstableType, &maxGeneration, "Metadata", &TOCData)
 
 	numOfLogs := MergeFiles(filesInfo, dataFile, indexFile, "Multiple")
 
 	offsetEnd, _ := dataFile.Seek(0, os.SEEK_END)
 	offsetEndUint64 := uint64(offsetEnd)
-	firstLog, lastLog := WriteBloom(dataFile, bloomFile, numOfLogs, &offsetEndUint64, "Multiple")
+	var leafNodes []*Node
+	firstLog, lastLog := WriteBloom(dataFile, bloomFile, numOfLogs, &offsetEndUint64, "Multiple", &leafNodes)
 
-	fmt.Println("first", string(firstLog.Key))
-	fmt.Println("last", string(lastLog.Key))
 	WriteSummaryMultiple(indexFile, summaryFile, *summaryBlockSize, firstLog, lastLog)
 
-	//metadata
+	merkle := BuildMerkleTreeCompaction(leafNodes)
+	WriteToTxtFile(maxGeneration+1, *level+1, "Metadata", "Multiple", hex.EncodeToString(SerializeMerkleTree(merkle)), &TOCData)
 
 	for i := 0; i < len(filesInfo); i++ {
 		filesInfo[i].File.Close()
 	}
 	WriteToTxtFile(maxGeneration+1, *level+1, "TOC", *sstableType, TOCData, nil)
 
-	//DeleteFilesFromLevel(*level, *sstableType)
+	DeleteFilesFromLevel(*level, *sstableType)
 	if maxGeneration+1 == LEVEL_TRASHOLD {
 		*level++
 		SizeTieredCompactionMultiple(level, sstableType, summaryBlockSize)
@@ -562,7 +564,6 @@ func SizeTieredCompactionSingle(level *int, sstableType *string, summaryBlockSiz
 	maxGeneration, _ := GetMaxGenerationFromLevel("./Data/SSTables/"+*sstableType, *level+1)
 	mainFile, indexFile := OpenDataAndIndexFiles(level, sstableType, &maxGeneration)
 	TOCData := "./Data/SSTables/" + *sstableType + "/" + "Data" + "-" + strconv.Itoa(maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin\n"
-	TOCData += "./Data/SSTables/" + *sstableType + "/" + "Metadata" + "-" + strconv.Itoa(maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin\n"
 
 	header := Header{}
 	header.LogsOffset = 32
@@ -570,7 +571,8 @@ func SizeTieredCompactionSingle(level *int, sstableType *string, summaryBlockSiz
 	OffsetEnd, _ := mainFile.Seek(0, os.SEEK_END)
 	header.BloomOffset = uint64(OffsetEnd)
 
-	firstLog, lastLog := WriteBloom(mainFile, nil, numOfLogs, &header.BloomOffset, "Single")
+	var leafNodes []*Node
+	firstLog, lastLog := WriteBloom(mainFile, nil, numOfLogs, &header.BloomOffset, "Single", &leafNodes)
 	OffsetEnd, _ = mainFile.Seek(0, os.SEEK_END)
 	header.IndexOffset = uint64(OffsetEnd)
 
@@ -586,7 +588,8 @@ func SizeTieredCompactionSingle(level *int, sstableType *string, summaryBlockSiz
 
 	WriteSummarySingle(mainFile, &header, *summaryBlockSize, firstLog, lastLog)
 
-	//metadata
+	merkle := BuildMerkleTreeCompaction(leafNodes)
+	WriteToTxtFile(maxGeneration+1, *level+1, "Metadata", "Single", hex.EncodeToString(SerializeMerkleTree(merkle)), &TOCData)
 
 	for i := 0; i < len(filesInfo); i++ {
 		filesInfo[i].File.Close()
