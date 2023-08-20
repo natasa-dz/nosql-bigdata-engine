@@ -198,8 +198,8 @@ func FindMinLog(filesInfo []*FileInfo, fileType string) (int, []*FileInfo) {
 			if filesInfo[i].CurrentLog.Timestamp > minLog.Timestamp {
 				nilLog := LoadNewLog(filesInfo[minIndex], fileType)
 				if filesInfo[i].CurrentLog.Tombstone == true {
-					nilLog = LoadNewLog(filesInfo[i], fileType)
-					if nilLog {
+					nilLog2 := LoadNewLog(filesInfo[i], fileType)
+					if nilLog || nilLog2 {
 						filesInfo = RemoveNilElements(filesInfo)
 					}
 					//restartuj
@@ -220,8 +220,8 @@ func FindMinLog(filesInfo []*FileInfo, fileType string) (int, []*FileInfo) {
 				//vamo udje kad min>current.time a usput su keys jednaki
 				nilLog := LoadNewLog(filesInfo[i], fileType)
 				if minLog.Tombstone == true {
-					nilLog = LoadNewLog(filesInfo[minIndex], fileType)
-					if nilLog {
+					nilLog2 := LoadNewLog(filesInfo[minIndex], fileType)
+					if nilLog || nilLog2 {
 						filesInfo = RemoveNilElements(filesInfo)
 					}
 					//restartuj
@@ -242,6 +242,7 @@ func FindMinLog(filesInfo []*FileInfo, fileType string) (int, []*FileInfo) {
 	if restarted == true {
 		fmt.Println("RESTARTOVANJA", len(filesInfo))
 		fmt.Println("RESTARTOVANJA", string(filesInfo[0].CurrentLog.Key))
+		//filesInfo = RemoveNilElements(filesInfo)
 		return FindMinLog(filesInfo, fileType)
 	}
 	if restarted == true {

@@ -67,7 +67,7 @@ func main() {
 	// Test data for logs (assuming you have Log struct defined)
 	log1 := &Log{
 		CRC:       123,
-		Timestamp: 1896723999,
+		Timestamp: 1156721699,
 		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
@@ -76,30 +76,30 @@ func main() {
 	}
 	log2 := &Log{
 		CRC:       456,
-		Timestamp: 161123940,
+		Timestamp: 1536721699,
 		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key3"),
-		Value:     []byte("value1"),
+		Key:       []byte("key5"),
+		Value:     []byte("value5"),
 	}
 
 	log3 := &Log{
 		CRC:       789,
-		Timestamp: 1626723629,
+		Timestamp: 1926721699,
 		Tombstone: true,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key4"),
+		Key:       []byte("key7"),
 		Value:     []byte("value1"),
 	}
 	log4 := &Log{
 		CRC:       789,
-		Timestamp: 1726721699,
+		Timestamp: 1226721699,
 		Tombstone: true,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key5"),
+		Key:       []byte("key9"),
 		Value:     []byte("value1"),
 	}
 
@@ -115,7 +115,7 @@ func main() {
 	//LSM.SizeTieredCompactionSingle(&level, &sstableType, &summaryBlockSIze)
 	LSM.SizeTieredCompactionMultiple(&level, &sstableType, &summaryBlockSIze)
 	// Call writeToMultipleFiles function
-	//BuildSSTableMultiple(logs, 1, 1, 3)
+	//BuildSSTableMultiple(logs, 4, 1, 3)
 
 	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")
 	if err != nil {
