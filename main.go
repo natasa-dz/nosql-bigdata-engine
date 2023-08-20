@@ -2,6 +2,7 @@ package main
 
 import (
 	"NAiSP/BloomFilter"
+	"NAiSP/LSM"
 	. "NAiSP/Log"
 	. "NAiSP/SSTable"
 	"fmt"
@@ -70,7 +71,7 @@ func main() {
 		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key4"),
+		Key:       []byte("key2"),
 		Value:     []byte("value5"),
 	}
 	log2 := &Log{
@@ -79,42 +80,42 @@ func main() {
 		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key5"),
+		Key:       []byte("key3"),
 		Value:     []byte("value1"),
 	}
 
 	log3 := &Log{
 		CRC:       789,
 		Timestamp: 1626723629,
-		Tombstone: false,
+		Tombstone: true,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key6"),
+		Key:       []byte("key4"),
 		Value:     []byte("value1"),
 	}
 	log4 := &Log{
 		CRC:       789,
 		Timestamp: 1726721699,
-		Tombstone: false,
+		Tombstone: true,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key7"),
+		Key:       []byte("key5"),
 		Value:     []byte("value1"),
 	}
 
 	logs := []*Log{log1, log2, log3, log4}
 	SortData(logs)
 
-	/*var level int
+	var level int
 	var sstableType string
 	var summaryBlockSIze int
 	level = 1
 	sstableType = "Multiple"
-	summaryBlockSIze = 3*/
+	summaryBlockSIze = 3
 	//LSM.SizeTieredCompactionSingle(&level, &sstableType, &summaryBlockSIze)
-	//LSM.SizeTieredCompactionMultiple(&level, &sstableType, &summaryBlockSIze)
+	LSM.SizeTieredCompactionMultiple(&level, &sstableType, &summaryBlockSIze)
 	// Call writeToMultipleFiles function
-	//BuildSSTableMultiple(logs, 2, 1, 3)
+	//BuildSSTableMultiple(logs, 1, 1, 3)
 
 	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")
 	if err != nil {

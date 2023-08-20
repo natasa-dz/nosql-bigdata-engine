@@ -173,34 +173,81 @@ type FileInfo struct {
 	Header     *Header
 }
 
-func FindMinLog(filesInfo []*FileInfo, fileType string) int {
+func LoadNewLog(fileInfo *FileInfo, fileType string) bool {
+	if fileType == "Single" {
+		ReadLogSingle(fileInfo)
+	} else {
+		ReadLogMultiple(fileInfo)
+	}
+	if fileInfo.CurrentLog == nil {
+		return true
+	}
+	return false
+}
+
+func FindMinLog(filesInfo []*FileInfo, fileType string) (int, []*FileInfo) {
 	minLog := filesInfo[0].CurrentLog
 	minIndex := 0
+	restarted := false
 	for i := 1; i < len(filesInfo); i++ {
+		fmt.Println("usao", len(filesInfo))
 		if string(filesInfo[i].CurrentLog.Key) < string(minLog.Key) {
 			minLog = filesInfo[i].CurrentLog
 			minIndex = i
 		} else if string(filesInfo[i].CurrentLog.Key) == string(minLog.Key) {
 			if filesInfo[i].CurrentLog.Timestamp > minLog.Timestamp {
-				if fileType == "Single" {
-					ReadLogSingle(filesInfo[minIndex])
+				nilLog := LoadNewLog(filesInfo[minIndex], fileType)
+				if filesInfo[i].CurrentLog.Tombstone == true {
+					nilLog = LoadNewLog(filesInfo[i], fileType)
+					if nilLog {
+						filesInfo = RemoveNilElements(filesInfo)
+					}
+					//restartuj
+					restarted = true
+					break
 				} else {
-					ReadLogMultiple(filesInfo[minIndex])
+					minLog = filesInfo[i].CurrentLog
+					minIndex = i
+					if nilLog {
+						filesInfo = RemoveNilElements(filesInfo)
+						//restartuj
+						restarted = true
+						break
+					}
 				}
-				minLog = filesInfo[i].CurrentLog
-				minIndex = i
+
 			} else {
 				//vamo udje kad min>current.time a usput su keys jednaki
-				if fileType == "Single" {
-					ReadLogSingle(filesInfo[i])
-				} else {
-					ReadLogMultiple(filesInfo[i])
+				nilLog := LoadNewLog(filesInfo[i], fileType)
+				if minLog.Tombstone == true {
+					nilLog = LoadNewLog(filesInfo[minIndex], fileType)
+					if nilLog {
+						filesInfo = RemoveNilElements(filesInfo)
+					}
+					//restartuj
+					restarted = true
+					break
+				}
+				if nilLog {
+					filesInfo = RemoveNilElements(filesInfo)
+					//restartuj
+					restarted = true
+					break
 				}
 			}
 
 		}
 	}
-	return minIndex
+
+	if restarted == true {
+		fmt.Println("RESTARTOVANJA", len(filesInfo))
+		fmt.Println("RESTARTOVANJA", string(filesInfo[0].CurrentLog.Key))
+		return FindMinLog(filesInfo, fileType)
+	}
+	if restarted == true {
+		fmt.Println("USAO NAKON RESTARTOVANJA")
+	}
+	return minIndex, filesInfo
 }
 
 func IsLogsOffsetEnd(fileInfo *FileInfo, endOffset int64) bool {
@@ -296,17 +343,20 @@ func MergeFiles(filesInfo []*FileInfo, mainFile *os.File, indexFile *os.File, fi
 	} else {
 		currentLogOffset = 0
 	}
-
+	minLogIndex := -1
 	for len(filesInfo) > 0 {
-		minLogIndex := FindMinLog(filesInfo, fileType)
+		fmt.Println("duzinaa1", len(filesInfo))
+		minLogIndex, filesInfo = FindMinLog(filesInfo, fileType)
 		WriteIndexEntry(indexFile, filesInfo[minLogIndex].CurrentLog, &currentLogOffset)
 		currentLogOffset = *WriteLog(mainFile, filesInfo[minLogIndex].CurrentLog)
+		fmt.Println("duzinaa2", len(filesInfo))
 		if fileType == "Single" {
 			ReadLogSingle(filesInfo[minLogIndex])
 		} else {
 			ReadLogMultiple(filesInfo[minLogIndex])
 		}
 		filesInfo = RemoveNilElements(filesInfo)
+		fmt.Println("duzinaa10", len(filesInfo))
 		numOfElements++
 	}
 	return &numOfElements
