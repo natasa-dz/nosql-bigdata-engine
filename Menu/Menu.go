@@ -33,11 +33,32 @@ func WriteMainMenu() string {
 	fmt.Println("3. Delete Log [DELETE]")
 	fmt.Println("4. List Logs by prefix [LIST]")
 	fmt.Println("5. List Logs by range [RANGE SCAN]")
+	fmt.Println("6. Compact level of LSM tree")
 	fmt.Println("X. Exit [EXIT]")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	retVal := scanner.Text()
 	return strings.ToUpper(retVal)
+}
+
+func CompactionMenu(maxLevelForCompaction int) int {
+	var levelNum string
+	var num int
+	var err error
+	for true {
+		fmt.Println("Enter number of level to be compacted: ")
+		scanner := bufio.NewScanner(os.Stdin)
+		if scanner.Scan() {
+			levelNum = scanner.Text()
+		}
+		num, err = strconv.Atoi(levelNum)
+		if err == nil && num <= maxLevelForCompaction {
+			break
+		}
+		fmt.Println("Invalid input...try again")
+	}
+	fmt.Println("Compacting a level....")
+	return num
 }
 
 func PUT_Menu() ([]byte, []byte) {

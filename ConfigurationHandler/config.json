@@ -10,5 +10,7 @@
   "TokenBucketSize": 2,
   "TokenBucketRefreshTime": 10000,
   "CacheSize": 2,
-  "MenuPaginationSize": 5
+  "MenuPaginationSize": 5,
+  "MaxNumOfLSMLevels": 4,
+  "MaxNumOfSSTablesPerLevel": 2
 }

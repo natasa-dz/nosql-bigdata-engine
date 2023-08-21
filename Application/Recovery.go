@@ -14,9 +14,10 @@ func (app *Application) Recover(numOfFiles string) {
 	walFiles := getAllWalFiles(numOfFiles) //ako je prazan direktorijum on ce napraviti novi wal.log fajl
 	SSData := extractDataFromSSFile(numOfFiles)
 	logsToInsertInMemtable, numOfLogsInLastWal := getAllLogsForMemtable(walFiles, SSData, numOfFiles)
+
 	for i := len(logsToInsertInMemtable) - 1; i >= 0; i-- {
 		if logsToInsertInMemtable[i].Tombstone == false {
-			app.Memtable.Insert(logsToInsertInMemtable[i], numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs)
+			app.Memtable.Insert(logsToInsertInMemtable[i], numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
 			app.Cache.Insert(logsToInsertInMemtable[i])
 		} /*else {
 			app.Memtable.Delete(string(log.Key))
@@ -73,13 +74,13 @@ func extractDataFromSSFile(numOfFiles string) []*Log {
 	if SSFile == nil { //prazan direktorijum
 		return nil
 	}
-	openedFile, err := os.Open("Data/SStables/" + strings.Title(numOfFiles) + "/" + SSFile.Name())
+	openedFile, err := os.Open("Data/SSTables/" + strings.Title(numOfFiles) + "/" + SSFile.Name())
 	if err != nil {
 		fmt.Println("Error opening SS file:", err)
 		return nil
 	}
 	defer openedFile.Close()
-	openedFileInfo, _ := os.Stat("Data/SStables/" + strings.Title(numOfFiles) + "/" + SSFile.Name())
+	openedFileInfo, _ := os.Stat("Data/SSTables/" + strings.Title(numOfFiles) + "/" + SSFile.Name())
 
 	if numOfFiles == "single" {
 		header, _ := ss.ReadHeader(openedFile)
@@ -94,7 +95,7 @@ func extractDataFromSSFile(numOfFiles string) []*Log {
 func getLatestSSTableFile(numOfFiles string) os.DirEntry {
 	var retVal os.DirEntry
 	numOfFiles = strings.Title(numOfFiles)
-	files, err := os.ReadDir("Data/SStables/" + numOfFiles + "/")
+	files, err := os.ReadDir("Data/SSTables/" + numOfFiles + "/")
 	if err != nil {
 		fmt.Println("ERR...Cannot gather all SStableFiles")
 		return nil

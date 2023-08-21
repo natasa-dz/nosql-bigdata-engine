@@ -29,6 +29,39 @@ func Hash(data []byte) []byte {
 	return hash[:]
 }
 
+func AppendLog(log *Log, leafNodes *[]*Node) {
+	node := &Node{
+		Data: append(log.Key, log.Value...), // Concatenate Key and Value for simplicity
+	}
+	*leafNodes = append(*leafNodes, node)
+}
+
+func BuildMerkleTreeCompaction(leafNodes []*Node) *Node {
+	// Build the Merkle tree by combining and hashing pairs of nodes.
+	for len(leafNodes) > 1 {
+		var newLevel []*Node
+
+		for i := 0; i < len(leafNodes); i += 2 {
+			if i+1 < len(leafNodes) {
+				newNode := &Node{
+					Data:  Hash(append(leafNodes[i].Data, leafNodes[i+1].Data...)),
+					Left:  leafNodes[i],
+					Right: leafNodes[i+1],
+				}
+				newLevel = append(newLevel, newNode)
+			} else {
+				// If there's an odd number of nodes, simply add the last node to the new level.
+				newLevel = append(newLevel, leafNodes[i])
+			}
+		}
+
+		leafNodes = newLevel
+	}
+
+	// The last remaining node is the root of the Merkle tree.
+	return leafNodes[0]
+}
+
 // bottom-up izgradnja, pretpostavka da imamo key:value parove!!!!!!!!
 func BuildMerkleTreeRoot(sortedData []*Log) *Node {
 	// Create leaf nodes for each data entry and hash them individually.

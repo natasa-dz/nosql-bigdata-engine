@@ -3,6 +3,7 @@ package Application
 import (
 	cache "NAiSP/Cache"
 	config "NAiSP/ConfigurationHandler"
+	"NAiSP/LSM"
 	. "NAiSP/Log"
 	memtable "NAiSP/MemTable"
 	menu "NAiSP/Menu"
@@ -46,14 +47,21 @@ func (app *Application) StartApp() {
 		userInput = menu.WriteMainMenu()
 		if userInput == "1" {
 			if app.TokenBucket.MakeRequest() { //proveri ima li slobodnih zahteva
-				key, value := menu.PUT_Menu()                                                                                //iz menija uzmi vrednosti
-				newLog := CreateLog(key, value)                                                                              //pravi log
-				wal.AppendToWal(app.WalFile, newLog)                                                                         //ubaci u Wal
-				app.Memtable.Insert(newLog, app.ConfigurationData.NumOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs) //ubaci u memtable
-				app.Cache.Insert(newLog)                                                                                     //ubaci ga u cache
+				key, value := menu.PUT_Menu()                                                                                                                  //iz menija uzmi vrednosti
+				newLog := CreateLog(key, value)                                                                                                                //pravi log
+				wal.AppendToWal(app.WalFile, newLog)                                                                                                           //ubaci u Wal
+				app.Memtable.Insert(newLog, app.ConfigurationData.NumOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles) //ubaci u memtable
+				app.Cache.Insert(newLog)                                                                                                                       //ubaci ga u cache
 				app.NumOfWalInserts++
 			} else {
 				menu.OutOfTokensNotification()
+			}
+		} else if userInput == "6" {
+			levelNum := menu.CompactionMenu(app.ConfigurationData.MaxNumOfLSMLevels - 1)
+			if app.ConfigurationData.NumOfFiles == "single" {
+				LSM.SizeTieredCompactionSingle(&levelNum, &app.ConfigurationData.NumOfSummarySegmentLogs, &app.ConfigurationData.MaxNumOfSSTablesPerLevel, &app.ConfigurationData.MaxNumOfLSMLevels)
+			} else {
+				LSM.SizeTieredCompactionMultiple(&levelNum, &app.ConfigurationData.NumOfSummarySegmentLogs, &app.ConfigurationData.MaxNumOfSSTablesPerLevel, &app.ConfigurationData.MaxNumOfLSMLevels)
 			}
 		}
 	}
