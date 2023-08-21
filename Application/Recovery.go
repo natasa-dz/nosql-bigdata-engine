@@ -14,12 +14,14 @@ func (app *Application) Recover(numOfFiles string) {
 	walFiles := getAllWalFiles(numOfFiles) //ako je prazan direktorijum on ce napraviti novi wal.log fajl
 	SSData := extractDataFromSSFile(numOfFiles)
 	logsToInsertInMemtable, numOfLogsInLastWal := getAllLogsForMemtable(walFiles, SSData, numOfFiles)
-	for _, log := range logsToInsertInMemtable {
-		if log.Tombstone == false {
-			app.Memtable.Insert(log, numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
-			app.Cache.Insert(log)
+
+	for i := len(logsToInsertInMemtable) - 1; i >= 0; i-- {
+		if logsToInsertInMemtable[i].Tombstone == false {
+			app.Memtable.Insert(logsToInsertInMemtable[i], numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
+			app.Cache.Insert(logsToInsertInMemtable[i])
 		} /*else {
 			app.Memtable.Delete(string(log.Key))
+			app.Cache.delete(string...)
 		}*/
 	}
 	app.NumOfWalInserts = numOfLogsInLastWal
