@@ -47,11 +47,11 @@ func (app *Application) StartApp() {
 		userInput = menu.WriteMainMenu()
 		if userInput == "1" {
 			if app.TokenBucket.MakeRequest() { //proveri ima li slobodnih zahteva
-				key, value := menu.PUT_Menu()                                                                                //iz menija uzmi vrednosti
-				newLog := CreateLog(key, value)                                                                              //pravi log
-				wal.AppendToWal(app.WalFile, newLog)                                                                         //ubaci u Wal
-				app.Memtable.Insert(newLog, app.ConfigurationData.NumOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs) //ubaci u memtable
-				app.Cache.Insert(newLog)                                                                                     //ubaci ga u cache
+				key, value := menu.PUT_Menu()                                                                                                                  //iz menija uzmi vrednosti
+				newLog := CreateLog(key, value)                                                                                                                //pravi log
+				wal.AppendToWal(app.WalFile, newLog)                                                                                                           //ubaci u Wal
+				app.Memtable.Insert(newLog, app.ConfigurationData.NumOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles) //ubaci u memtable
+				app.Cache.Insert(newLog)                                                                                                                       //ubaci ga u cache
 				app.NumOfWalInserts++
 			} else {
 				menu.OutOfTokensNotification()

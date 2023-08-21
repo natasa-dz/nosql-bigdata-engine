@@ -1,13 +1,10 @@
 package MemTable
 
 import (
+	"NAiSP/LSM"
 	. "NAiSP/Log"
 	sstable "NAiSP/SSTable"
-	"fmt"
-	"os"
 	"sort"
-	"strconv"
-	"strings"
 )
 
 //trashold - granica/prag zapisa (< 100%)
@@ -31,10 +28,11 @@ func GenerateMemtable(kapacitetStrukture uint32, pragZaFlush float64, imeStruktu
 	return &table
 }
 
-func (table *Memtable) Flush(numOfFiles string, summaryBlockSize int) {
+func (table *Memtable) Flush(numOfFiles string, summaryBlockSize int, fileType string) {
 	unsortedLogs := table.tableStruct.GetAllLogs()
 	SortedLogs := sortData(unsortedLogs)
-	sstable.BuildSSTable(SortedLogs, getLastGen(numOfFiles)+1, 1, numOfFiles, summaryBlockSize)
+	maxGeneration, _ := LSM.GetMaxGenerationFromLevel(fileType, 1)
+	sstable.BuildSSTable(SortedLogs, maxGeneration+1, 1, numOfFiles, summaryBlockSize)
 }
 
 func sortData(entries []*Log) []*Log {
@@ -51,14 +49,14 @@ func (table *Memtable) TableFull() bool {
 	return false
 }
 
-func (table *Memtable) Insert(data *Log, numOfFiles string, summaryBlockSize int) {
+func (table *Memtable) Insert(data *Log, numOfFiles string, summaryBlockSize int, fileType string) {
 	foundLog := table.tableStruct.Search(string(data.Key))
 	if foundLog != nil {
 		foundLog.Value = (*data).Value
 	} else {
 		table.tableStruct.Insert(data)
 		if table.TableFull() {
-			table.Flush(numOfFiles, summaryBlockSize)
+			table.Flush(numOfFiles, summaryBlockSize, fileType)
 			table.tableStruct.Empty()
 		}
 	}
@@ -75,30 +73,4 @@ func (table *Memtable) Search(key string) *Log {
 		return foundLog
 	}
 	return nil
-}
-
-// dobavi poslednju generaciju i najveci level za pravljenje SSTabla
-func getLastGen(numOfFiles string) int {
-	nameOfDir := strings.ToUpper(string(numOfFiles[0])) + numOfFiles[1:]
-	files, err := os.ReadDir("Data/SSTables/" + nameOfDir) //read all files from Single/Multiple
-	if err != nil {
-		fmt.Println("Err when reading last generation")
-	}
-
-	onlyTOCFiles := []string{} //will have names(Strings) of all TOC files
-	for _, file := range files {
-		if strings.HasPrefix(file.Name(), "TOC-") {
-			onlyTOCFiles = append(onlyTOCFiles, file.Name())
-		}
-	}
-
-	maxgen := 0
-	for _, fileName := range onlyTOCFiles {
-		parts := strings.Split(fileName, "-")
-		gen, _ := strconv.Atoi(parts[1])
-		if gen > maxgen {
-			maxgen = gen
-		}
-	}
-	return maxgen
 }

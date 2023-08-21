@@ -16,7 +16,7 @@ func (app *Application) Recover(numOfFiles string) {
 	logsToInsertInMemtable, numOfLogsInLastWal := getAllLogsForMemtable(walFiles, SSData, numOfFiles)
 	for _, log := range logsToInsertInMemtable {
 		if log.Tombstone == false {
-			app.Memtable.Insert(log, numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs)
+			app.Memtable.Insert(log, numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
 			app.Cache.Insert(log)
 		} /*else {
 			app.Memtable.Delete(string(log.Key))

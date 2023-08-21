@@ -1,9 +1,7 @@
 package main
 
 import (
-	application "NAiSP/Application"
 	. "NAiSP/Log"
-	menu "NAiSP/Menu"
 	"sort"
 )
 
@@ -14,9 +12,9 @@ func SortData(entries []*Log) []*Log {
 	return entries
 }
 func main() {
-	choiceOfConfig := menu.WriteAppInitializationMenu()
+	/*choiceOfConfig := menu.WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
-	app.StartApp()
+	app.StartApp()*/
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}
@@ -62,74 +60,76 @@ func main() {
 	//----------------------------------------------------------------------------
 	//========================SSTABLE TESTS=======================================
 	// Test data for logs (assuming you have Log struct defined)
-	log1 := &Log{
+	/*log1 := &Log{
 		CRC:       123,
-		Timestamp: 1199721698,
-		Tombstone: false,
-		KeySize:   4,
-		ValueSize: 6,
-		Key:       []byte("key1"),
-		Value:     []byte("value2"),
-	}
-	log2 := &Log{
-		CRC:       456,
-		Timestamp: 1199721699,
+		Timestamp: 1159721698,
 		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
 		Key:       []byte("key3"),
+		Value:     []byte("value5"),
+	}
+	log2 := &Log{
+		CRC:       456,
+		Timestamp: 1495721699,
+		Tombstone: false,
+		KeySize:   4,
+		ValueSize: 6,
+		Key:       []byte("key8"),
 		Value:     []byte("value9"),
 	}
 
 	log3 := &Log{
 		CRC:       789,
-		Timestamp: 1169721699,
+		Timestamp: 1299721699,
 		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key8"),
+		Key:       []byte("key5"),
 		Value:     []byte("value1"),
 	}
 	log4 := &Log{
 		CRC:       789,
-		Timestamp: 1929721699,
-		Tombstone: true,
+		Timestamp: 1229721699,
+		Tombstone: false,
 		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key7"),
+		Key:       []byte("key4"),
 		Value:     []byte("value1"),
 	}
 
 	logs := []*Log{log1, log2, log3, log4}
-	SortData(logs)
+	SortData(logs)*/
 
 	/*var level int
-	var sstableType string
 	var summaryBlockSIze int
+	var levelT int
+	var maxL int
 	level = 2
-	sstableType = "Multiple"
-	summaryBlockSIze = 3*/
+	summaryBlockSIze = 3
+	levelT = 2
+	maxL = 4*/
 	//LSM.SizeTieredCompactionSingle(&level, &sstableType, &summaryBlockSIze)
-	//LSM.SizeTieredCompactionMultiple(&level, &sstableType, &summaryBlockSIze)
+	//LSM.SizeTieredCompactionMultiple(&level, &summaryBlockSIze, &levelT, &maxL)
 	// Call writeToMultipleFiles function
 	//SSTable.BuildSSTableMultiple(logs, 2, 2, 3)
 
-	/*file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-2.bin")
+	/*file, err := os.Open("./Data/SSTables/Multiple/Bloom-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	file2, err := os.Open("./Data/SSTables/Multiple/Data-1-2.bin")
+	file2, err := os.Open("./Data/SSTables/Multiple/Data-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	file3, err := os.Open("./Data/SSTables/Multiple/Index-1-2.bin")
+	file3, err := os.Open("./Data/SSTables/Multiple/Index-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
-	file4, err := os.Open("./Data/SSTables/Multiple/Summary-1-2.bin")
+	file4, err := os.Open("./Data/SSTables/Multiple/Summary-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -178,13 +178,13 @@ func main() {
 	defer file3.Close()
 	defer file4.Close()*/
 	// Call writeToSingleFile function
-	/*err := BuildSSTableSingle(logs, 4, 1, 3)
+	/*err := SSTable.BuildSSTableSingle(logs, 1, 2, 3)
 	if err != nil {
 		fmt.Println("Error writing to a single file:", err)
 		return
 	}*/
 
-	/*file, err := os.Open("./Data/SSTables/Single/Data-1-2.bin")
+	/*file, err := os.Open("./Data/SSTables/Single/Data-2-4.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return

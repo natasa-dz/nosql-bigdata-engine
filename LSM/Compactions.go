@@ -50,9 +50,9 @@ func GetAllFilesFromLevel(dirPath string, level int, onlyData bool) ([]string, e
 	return files, nil
 }
 
-func GetMaxGenerationFromLevel(dirPath string, level int) (int, error) { //NOTE OVO
+func GetMaxGenerationFromLevel(fileType string, level int) (int, error) { //NOTE OVO
 	// Read the directory and get a list of file and folder names
-	fileInfos, err := ioutil.ReadDir(dirPath)
+	fileInfos, err := ioutil.ReadDir("./Data/SSTables/" + fileType)
 	if err != nil {
 		return 0, err
 	}
@@ -429,7 +429,7 @@ func OpenFile(level *int, sstableType *string, maxGeneration *int, fileType stri
 func SizeTieredCompactionMultiple(level *int, summaryBlockSize *int, levelTrashold *int, maxLSMLevel *int) {
 	fileType := "Multiple"
 	filesInfo := LoadFilesFromLevel(level, &fileType)
-	maxGeneration, _ := GetMaxGenerationFromLevel("./Data/SSTables/Multiple", *level+1)
+	maxGeneration, _ := GetMaxGenerationFromLevel("Multiple", *level+1)
 	TOCData := ""
 	dataFile := OpenFile(level, &fileType, &maxGeneration, "Data", &TOCData)
 	indexFile := OpenFile(level, &fileType, &maxGeneration, "Index", &TOCData)
@@ -454,7 +454,7 @@ func SizeTieredCompactionMultiple(level *int, summaryBlockSize *int, levelTrasho
 	WriteToTxtFile(maxGeneration+1, *level+1, "TOC", fileType, TOCData, nil)
 
 	DeleteFilesFromLevel(*level, fileType)
-	if maxGeneration+1 == *levelTrashold && *level < *maxLSMLevel {
+	if maxGeneration+1 == *levelTrashold && *level+1 < *maxLSMLevel {
 		*level++
 		SizeTieredCompactionMultiple(level, summaryBlockSize, levelTrashold, maxLSMLevel)
 	}
@@ -463,7 +463,7 @@ func SizeTieredCompactionMultiple(level *int, summaryBlockSize *int, levelTrasho
 func SizeTieredCompactionSingle(level *int, summaryBlockSize *int, levelTrashold *int, maxLSMLevel *int) {
 	fileType := "Single"
 	filesInfo := LoadFilesFromLevel(level, &fileType)
-	maxGeneration, _ := GetMaxGenerationFromLevel("./Data/SSTables/Single", *level+1)
+	maxGeneration, _ := GetMaxGenerationFromLevel("Single", *level+1)
 	mainFile, indexFile := OpenDataAndIndexFiles(level, &fileType, &maxGeneration)
 	TOCData := "./Data/SSTables/Single/Data" + "-" + strconv.Itoa(maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin\n"
 
@@ -499,7 +499,7 @@ func SizeTieredCompactionSingle(level *int, summaryBlockSize *int, levelTrashold
 	WriteToTxtFile(maxGeneration+1, *level+1, "TOC", fileType, TOCData, nil)
 	os.Remove("./Data/SSTables/Single/Index-" + strconv.Itoa(maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin")
 	DeleteFilesFromLevel(*level, fileType)
-	if maxGeneration+1 == *levelTrashold && *level < *maxLSMLevel {
+	if maxGeneration+1 == *levelTrashold && *level+1 < *maxLSMLevel {
 		*level++
 		SizeTieredCompactionSingle(level, summaryBlockSize, levelTrashold, maxLSMLevel)
 	}

@@ -12,5 +12,5 @@
   "CacheSize": 2,
   "MenuPaginationSize": 5,
   "MaxNumOfLSMLevels": 4,
-  "MaxNumOfSSTablesPerLevel": 3
+  "MaxNumOfSSTablesPerLevel": 2
 }
