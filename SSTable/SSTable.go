@@ -23,7 +23,7 @@ type SSTable struct {
 	Data       []Log
 	Index      Index
 	Summary    Summary
-	Filter     Bloom2
+	Filter     Bloom
 	//	TOC        TOCEntry
 	Metadata MerkleRoot
 }

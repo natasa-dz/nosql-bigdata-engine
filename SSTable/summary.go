@@ -35,6 +35,10 @@ func WriteSummaryHeaderSingle(sortedData []*IndexEntry, SummaryContent *bytes.Bu
 	binary.Write(SummaryContent, binary.LittleEndian, []byte(sortedData[len(sortedData)-1].Key))
 }
 
+func ReadSummaryHeader() {
+
+}
+
 func ReadSummary(file *os.File, offset int64) (*Summary, error) {
 	offsetEnd, err := file.Seek(0, os.SEEK_END)
 	file.Seek(offset, io.SeekStart)

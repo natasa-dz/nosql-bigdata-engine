@@ -50,12 +50,12 @@ func (cache *LRUCache) Delete(logToDelete *Log) { //bice koriscen prilikom delet
 	}
 }
 
-func (cache *LRUCache) Search(key string) []byte { //bice koriscen prilikom read patha
+func (cache *LRUCache) Search(key string) *Log { //bice koriscen prilikom read patha
 	//proveri mapu, ako ima pomeri elem na 'pocetak' liste i vrati vrednost elementa, ako nema vrati nil
 	adrOfExistingElem, ok := cache.cache[key]
 	if ok {
 		cache.list.MoveToFront(adrOfExistingElem)
-		return adrOfExistingElem.Value.(*Log).Value
+		return adrOfExistingElem.Value.(*Log)
 	}
 	return nil
 }

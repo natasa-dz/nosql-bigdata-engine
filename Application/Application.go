@@ -1,6 +1,7 @@
 package Application
 
 import (
+	bloom "NAiSP/BloomFilter"
 	cache "NAiSP/Cache"
 	config "NAiSP/ConfigurationHandler"
 	. "NAiSP/Log"
@@ -8,6 +9,7 @@ import (
 	menu "NAiSP/Menu"
 	bucket "NAiSP/TokenBucket"
 	wal "NAiSP/WriteAheadLog"
+	"fmt"
 	"os"
 	"time"
 )
@@ -18,6 +20,7 @@ type Application struct {
 	WalFile           *os.File
 	TokenBucket       *bucket.TockenBucket
 	Cache             *cache.LRUCache
+	Bloom             *bloom.Bloom
 	NumOfWalInserts   int //brojcanik za koliko smo logova bacili u 1 Wal
 }
 
@@ -35,6 +38,14 @@ func InitializeApp(choice string) *Application {
 	app.Recover(app.ConfigurationData.NumOfFiles)
 	app.WalFile, _ = wal.LoadLatestWAL(app.ConfigurationData.NumOfFiles)
 	app.TokenBucket = bucket.CreateBucket(app.ConfigurationData.TokenBucketSize, time.Duration(app.ConfigurationData.TokenBucketRefreshTime))
+
+	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-1.bin")
+	if err != nil {
+		fmt.Println("Error opening bloom filter file")
+		return nil
+	}
+	app.Bloom = bloom.ReadBloom(file, 0)
+
 	return &app
 }
 func (app *Application) StartApp() {
@@ -55,8 +66,49 @@ func (app *Application) StartApp() {
 			} else {
 				menu.OutOfTokensNotification()
 			}
+		} else if userInput == "2" {
+			if app.TokenBucket.MakeRequest() {
+				key := menu.GET_Menu()
+				foundLog := app.get(key)
+				if foundLog != nil {
+					app.Cache.Insert(foundLog)
+				}
+
+			} else {
+				menu.OutOfTokensNotification()
+			}
 		}
 	}
+
+}
+
+func (app *Application) get(key string) *Log {
+
+	valueMemtable := app.Memtable.Search(key)
+	if valueMemtable == nil {
+		fmt.Println("Key not found in memtable")
+
+		valueCache := app.Cache.Search(key)
+		if valueCache == nil {
+			fmt.Print("Key not found in cache")
+
+			if app.Bloom.BloomSearch([]byte(key)) {
+				fmt.Println("Bloom filter indicates that the key might exist")
+			} else {
+				fmt.Println("Bloom filter indicates that the key does not exist")
+				return nil
+			}
+		} else {
+			fmt.Println("Read from cache", valueCache)
+			return valueCache
+		}
+	} else {
+		fmt.Println("Read from memtable: ", valueMemtable)
+		return valueMemtable
+	}
+
+	return nil
+
 }
 
 func (app *Application) changeWalFile() { //fja za promenu Wal file kad stigne do konfigurabilnog broja segmenata u sebi

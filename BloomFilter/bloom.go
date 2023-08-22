@@ -8,13 +8,13 @@ import (
 	"os"
 )
 
-type Bloom2 struct {
+type Bloom struct {
 	M, K          int
 	BitSlices     []byte
 	HashFunctions []HashWithSeed
 }
 
-func (bloom *Bloom2) InitializeEmptyBloom2(expectedElements int, falsePositiveRate float64) {
+func (bloom *Bloom) InitializeEmptyBloom(expectedElements int, falsePositiveRate float64) {
 	mu := CalculateM(expectedElements, falsePositiveRate)
 	bloom.M = int(mu)
 
@@ -29,7 +29,7 @@ func (bloom *Bloom2) InitializeEmptyBloom2(expectedElements int, falsePositiveRa
 	bloom.HashFunctions = CreateHashFunctions(uint(bloom.K))
 }
 
-func (bloom *Bloom2) BloomSearch2(data []byte) bool {
+func (bloom *Bloom) BloomSearch(data []byte) bool {
 
 	exist := true
 
@@ -50,7 +50,7 @@ func (bloom *Bloom2) BloomSearch2(data []byte) bool {
 	}
 }
 
-func (bloom *Bloom2) Add(data []byte) {
+func (bloom *Bloom) Add(data []byte) {
 
 	for _, hf := range bloom.HashFunctions {
 		hash := hf.Hash(data)
@@ -59,7 +59,7 @@ func (bloom *Bloom2) Add(data []byte) {
 }
 
 // Serialize serializes the Bloom2 filter to a byte slice.
-func (bloom *Bloom2) Serialize() *bytes.Buffer {
+func (bloom *Bloom) Serialize() *bytes.Buffer {
 	var serializedBloom = new(bytes.Buffer)
 
 	// Serialize the filter parameters
@@ -80,9 +80,9 @@ func (bloom *Bloom2) Serialize() *bytes.Buffer {
 }
 
 // procitaj Bloom filter iz fajla
-func ReadBloom(file *os.File, offset int64) *Bloom2 {
+func ReadBloom(file *os.File, offset int64) *Bloom {
 
-	var bloom = new(Bloom2)
+	var bloom = new(Bloom)
 	file.Seek(offset, io.SeekStart)
 
 	var m, k uint64
@@ -128,9 +128,9 @@ func ReadBloom(file *os.File, offset int64) *Bloom2 {
 }
 
 // funkcija uzima ocekivane elemente, br. ocek. el. i rate, dodaje el. u bloom i kreira bloom filter*/
-func BuildFilter(logs []*Log, expectedElements int, falsePositiveRate float64) *Bloom2 {
-	bloom := Bloom2{}
-	bloom.InitializeEmptyBloom2(expectedElements, falsePositiveRate)
+func BuildFilter(logs []*Log, expectedElements int, falsePositiveRate float64) *Bloom {
+	bloom := Bloom{}
+	bloom.InitializeEmptyBloom(expectedElements, falsePositiveRate)
 
 	// Add each Key to the Bloom Filter
 	for _, log := range logs {
