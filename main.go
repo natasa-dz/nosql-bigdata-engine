@@ -1,7 +1,9 @@
 package main
 
 import (
+	application "NAiSP/Application"
 	. "NAiSP/Log"
+	menu "NAiSP/Menu"
 	"sort"
 )
 
@@ -12,9 +14,9 @@ func SortData(entries []*Log) []*Log {
 	return entries
 }
 func main() {
-	/*choiceOfConfig := menu.WriteAppInitializationMenu()
+	choiceOfConfig := menu.WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
-	app.StartApp()*/
+	app.StartApp()
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}
