@@ -2,11 +2,19 @@ package main
 
 import (
 	application "NAiSP/Application"
-	. "NAiSP/Menu"
+	. "NAiSP/Log"
+	menu "NAiSP/Menu"
+	"sort"
 )
 
+func SortData(entries []*Log) []*Log {
+	sort.Slice(entries, func(i, j int) bool {
+		return string(entries[i].Key) < string(entries[j].Key)
+	})
+	return entries
+}
 func main() {
-	choiceOfConfig := WriteAppInitializationMenu()
+	choiceOfConfig := menu.WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
 	app.StartApp()
 	//============================MENU TESTS======================
@@ -56,49 +64,59 @@ func main() {
 	// Test data for logs (assuming you have Log struct defined)
 	/*log1 := &Log{
 		CRC:       123,
-		Timestamp: 1626723915,
+		Timestamp: 1159721698,
 		Tombstone: false,
-		KeySize:   5,
+		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key25"),
-		Value:     []byte("value1"),
+		Key:       []byte("key3"),
+		Value:     []byte("value5"),
 	}
 	log2 := &Log{
 		CRC:       456,
-		Timestamp: 1626723999,
+		Timestamp: 1495721699,
 		Tombstone: false,
-		KeySize:   5,
+		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key26"),
-		Value:     []byte("value1"),
+		Key:       []byte("key8"),
+		Value:     []byte("value9"),
 	}
 
 	log3 := &Log{
 		CRC:       789,
-		Timestamp: 1626723629,
+		Timestamp: 1299721699,
 		Tombstone: false,
-		KeySize:   5,
+		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key27"),
+		Key:       []byte("key5"),
 		Value:     []byte("value1"),
 	}
 	log4 := &Log{
 		CRC:       789,
-		Timestamp: 1626721699,
+		Timestamp: 1229721699,
 		Tombstone: false,
-		KeySize:   5,
+		KeySize:   4,
 		ValueSize: 6,
-		Key:       []byte("key23"),
-		Value:     []byte("value5"),
+		Key:       []byte("key4"),
+		Value:     []byte("value1"),
 	}
 
 	logs := []*Log{log1, log2, log3, log4}
 	SortData(logs)*/
-	// Call writeToMultipleFiles function
-	//BuildSSTableMultiple(logs, 2, 1)
 
-	/*fmt.Println("Data written to multiple files successfully!")
-	file, err := os.Open("./Data/SSTables/Multiple/Bloom-2-1.bin")
+	/*var level int
+	var summaryBlockSIze int
+	var levelT int
+	var maxL int
+	level = 2
+	summaryBlockSIze = 3
+	levelT = 2
+	maxL = 4*/
+	//LSM.SizeTieredCompactionSingle(&level, &sstableType, &summaryBlockSIze)
+	//LSM.SizeTieredCompactionMultiple(&level, &summaryBlockSIze, &levelT, &maxL)
+	// Call writeToMultipleFiles function
+	//SSTable.BuildSSTableMultiple(logs, 2, 2, 3)
+
+	/*file, err := os.Open("./Data/SSTables/Multiple/Bloom-2-1.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -120,6 +138,7 @@ func main() {
 	}
 
 	//Logs test
+	fmt.Println("LOGS TEST")
 	var data []*Log
 	offsetEnd, err := file2.Seek(0, os.SEEK_END)
 	data, _ = ReadLogs(file2, 0, uint64(offsetEnd))
@@ -128,12 +147,14 @@ func main() {
 		fmt.Println(string(data[i].Value))
 	}
 	//Bloom test
+	fmt.Println("BLOOM TEST")
 	bloom := BloomFilter.ReadBloom(file, 0)
 	fmt.Println(bloom.BitSlices)
 	fmt.Println(bloom.M)
 	fmt.Println(bloom.K)
 
 	//Index test
+	fmt.Println("INDEX TEST")
 	offsetEnd, err = file3.Seek(0, os.SEEK_END)
 	fmt.Println(offsetEnd)
 	indexEntries, _ := ReadIndex(file3, 0, offsetEnd)
@@ -144,6 +165,7 @@ func main() {
 	}
 
 	//Summary test
+	fmt.Println("SUMMARY TEST")
 	summary, _ := ReadSummary(file4, 0)
 
 	fmt.Println(summary.StartKey)
@@ -158,12 +180,13 @@ func main() {
 	defer file3.Close()
 	defer file4.Close()*/
 	// Call writeToSingleFile function
-	/*err := BuildSSTableSingle(logs, 2, 1)
+	/*err := SSTable.BuildSSTableSingle(logs, 1, 2, 3)
 	if err != nil {
 		fmt.Println("Error writing to a single file:", err)
 		return
 	}*/
-	/*file, err := os.Open("./Data/SSTables/Single/Data-2-1.bin")
+
+	/*file, err := os.Open("./Data/SSTables/Single/Data-2-4.bin")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
@@ -172,7 +195,12 @@ func main() {
 	fmt.Println("LOGS TEST")
 	var data []*Log
 	header, _ := ReadHeader(file)
-	data, _ = ReadLogs(file, int64(header.LogsOffset), header.BloomOffset)
+	fmt.Println(header.LogsOffset)
+	fmt.Println(header.BloomOffset)
+	fmt.Println(header.IndexOffset)
+	fmt.Println(header.SummaryOffset)
+	//offsetEnd, err := file.Seek(0, os.SEEK_END)
+	data, _ = ReadLogs(file, int64(32), uint64(header.BloomOffset))
 
 	for i := 0; i < len(data); i++ {
 		fmt.Println(string(data[i].Key))
@@ -185,8 +213,6 @@ func main() {
 	fmt.Println(bloom.BitSlices)
 	fmt.Println(bloom.M)
 	fmt.Println(bloom.K)
-	fmt.Println(int64(header.IndexOffset))
-	fmt.Println(int64(header.SummaryOffset))
 
 	//Summary test
 	fmt.Println("SUMMARY TEST")
@@ -200,14 +226,13 @@ func main() {
 	}
 	//Index test
 	fmt.Println("INDEX TEST")
+	//offsetEnd, err := file.Seek(0, os.SEEK_END)
 	indexEntries, _ := ReadIndex(file, int64(header.IndexOffset), int64(header.SummaryOffset))
 
 	for i := 0; i < len(indexEntries); i++ {
-		fmt.Println(string(indexEntries[i].Key))
+		fmt.Println(indexEntries[i].Key)
 		fmt.Println(indexEntries[i].Offset)
 	}
 
 	defer file.Close()*/
-
-	//SizeTieredCompaction(1, "Single")*/
 }

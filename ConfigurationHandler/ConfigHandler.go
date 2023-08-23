@@ -19,11 +19,13 @@ type ConfigHandler struct {
 	//if memtable struct is btree
 	BTreeDegree uint32 `json:"BTreeDegree"`
 	//else struct == skipList(onda mi trebaju elementi za skiplist kao sto za btree imam njegov degree
-	SkipListMaxHeight      int `json:"SkipListMaxHeight"`
-	CacheSize              int `json:"CacheSize"`
-	TokenBucketSize        int `json:"TokenBucketSize"`
-	TokenBucketRefreshTime int `json:"TokenBucketRefreshTime"`
-	MenuPaginationSize     int `json:"MenuPaginationSize"`
+	SkipListMaxHeight        int `json:"SkipListMaxHeight"`
+	CacheSize                int `json:"CacheSize"`
+	TokenBucketSize          int `json:"TokenBucketSize"`
+	TokenBucketRefreshTime   int `json:"TokenBucketRefreshTime"`
+	MenuPaginationSize       int `json:"MenuPaginationSize"`
+	MaxNumOfLSMLevels        int `json:"MaxNumOfLSMLevels"`
+	MaxNumOfSSTablesPerLevel int `json:"MaxNumOfSSTablesPerLevel"`
 }
 
 func UseCustomConfiguration() *ConfigHandler {
@@ -51,6 +53,6 @@ func UseCustomConfiguration() *ConfigHandler {
 
 func UseDefaultConfiguration() *ConfigHandler {
 	config := ConfigHandler{NumOfWalSegmentLogs: 2, NumOfSummarySegmentLogs: 10, MemtableStruct: "btree", SizeOfMemtable: 5, Trashold: 0.8, BTreeDegree: 2, SkipListMaxHeight: 10, NumOfFiles: "multiple",
-		TokenBucketSize: 3, TokenBucketRefreshTime: 10000, CacheSize: 4, MenuPaginationSize: 3}
+		TokenBucketSize: 3, TokenBucketRefreshTime: 10000, CacheSize: 4, MenuPaginationSize: 3, MaxNumOfLSMLevels: 4, MaxNumOfSSTablesPerLevel: 2}
 	return &config
 }

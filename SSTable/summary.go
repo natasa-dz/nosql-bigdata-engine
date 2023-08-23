@@ -52,7 +52,7 @@ func ReadSummary(file *os.File, offset int64) (*Summary, error) {
 		return nil, err
 	}
 	startKeySize = uint64(binary.LittleEndian.Uint64(keySizeBytes))
-
+	//fmt.Println(startKeySize)
 	// Read the StartKey
 	var startKeyBytes = make([]byte, startKeySize)
 	_, err = file.Read(startKeyBytes)
@@ -60,7 +60,7 @@ func ReadSummary(file *os.File, offset int64) (*Summary, error) {
 		return nil, err
 	}
 	startKey := string(startKeyBytes)
-
+	//fmt.Println(startKey)
 	// Read the EndKeySize
 	var endKeySizeBytes = make([]byte, 8)
 	_, err = file.Read(endKeySizeBytes)
@@ -68,7 +68,7 @@ func ReadSummary(file *os.File, offset int64) (*Summary, error) {
 		return nil, err
 	}
 	endKeySize = uint64(binary.LittleEndian.Uint64(endKeySizeBytes))
-
+	//fmt.Println(endKeySize)
 	// Read the EndKey
 	var endKeyBytes = make([]byte, endKeySize)
 	_, err = file.Read(endKeyBytes)
@@ -76,7 +76,7 @@ func ReadSummary(file *os.File, offset int64) (*Summary, error) {
 		return nil, err
 	}
 	endKey := string(endKeyBytes)
-
+	//fmt.Println(endKey)
 	offset, _ = file.Seek(0, io.SeekCurrent)
 	var data []*IndexEntry
 	var loaded *IndexEntry

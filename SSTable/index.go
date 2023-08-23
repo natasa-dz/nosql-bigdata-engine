@@ -86,13 +86,12 @@ func ReadIndex(file *os.File, offset int64, offsetEnd int64) ([]*IndexEntry, err
 		offset, _ = file.Seek(0, io.SeekCurrent)
 		data = append(data, loaded)
 	}
+
 	return data, nil
 }
 
 func SerializeIndexes(Entries []*IndexEntry) []byte {
-
 	var serializedIndexes = new(bytes.Buffer)
-
 	for _, entry := range Entries {
 		binary.Write(serializedIndexes, binary.LittleEndian, entry.KeySize)
 		binary.Write(serializedIndexes, binary.LittleEndian, []byte(entry.Key))
