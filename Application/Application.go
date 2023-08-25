@@ -1,7 +1,6 @@
 package Application
 
 import (
-	bloom "NAiSP/BloomFilter"
 	cache "NAiSP/Cache"
 	config "NAiSP/ConfigurationHandler"
 	"NAiSP/LSM"
@@ -21,7 +20,6 @@ type Application struct {
 	WalFile           *os.File
 	TokenBucket       *bucket.TockenBucket
 	Cache             *cache.LRUCache
-	Bloom             *bloom.Bloom
 	NumOfWalInserts   int //brojcanik za koliko smo logova bacili u 1 Wal
 }
 
@@ -40,13 +38,6 @@ func InitializeApp(choice string) *Application {
 	app.WalFile, _ = wal.LoadLatestWAL(app.ConfigurationData.NumOfFiles)
 	app.TokenBucket = bucket.CreateBucket(app.ConfigurationData.TokenBucketSize, time.Duration(app.ConfigurationData.TokenBucketRefreshTime))
 
-	file, err := os.Open("./Data/SSTables/Multiple/Bloom-1-1.bin")
-	if err != nil {
-		fmt.Println("Error opening bloom filter file")
-		return nil
-	}
-	app.Bloom = bloom.ReadBloom(file, 0)
-
 	return &app
 }
 func (app *Application) StartApp() {
@@ -58,11 +49,11 @@ func (app *Application) StartApp() {
 		userInput = menu.WriteMainMenu()
 		if userInput == "1" {
 			if app.TokenBucket.MakeRequest() { //proveri ima li slobodnih zahteva
-				key, value := menu.PUT_Menu()                                                                                //iz menija uzmi vrednosti
-				newLog := CreateLog(key, value)                                                                              //pravi log
-				wal.AppendToWal(app.WalFile, newLog)                                                                         //ubaci u Wal
-				app.Memtable.Insert(newLog, app.ConfigurationData.NumOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs) //ubaci u memtable
-				app.Cache.Insert(newLog)                                                                                     //ubaci ga u cache
+				key, value := menu.PUT_Menu()                                                                                                                  //iz menija uzmi vrednosti
+				newLog := CreateLog(key, value)                                                                                                                //pravi log
+				wal.AppendToWal(app.WalFile, newLog)                                                                                                           //ubaci u Wal
+				app.Memtable.Insert(newLog, app.ConfigurationData.NumOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles) //ubaci u memtable
+				app.Cache.Insert(newLog)                                                                                                                       //ubaci ga u cache
 				app.NumOfWalInserts++
 			} else {
 				menu.OutOfTokensNotification()
@@ -70,11 +61,11 @@ func (app *Application) StartApp() {
 		} else if userInput == "2" {
 			if app.TokenBucket.MakeRequest() {
 				key := menu.GET_Menu()
-				foundLog := app.get(key)
+				foundLog := app.Get(key)
 				if foundLog != nil {
+					fmt.Println("Found value: ", string(foundLog.Value))
 					app.Cache.Insert(foundLog)
 				}
-
 			} else {
 				menu.OutOfTokensNotification()
 			}
@@ -87,35 +78,6 @@ func (app *Application) StartApp() {
 			}
 		}
 	}
-
-}
-
-func (app *Application) get(key string) *Log {
-
-	valueMemtable := app.Memtable.Search(key)
-	if valueMemtable == nil {
-		fmt.Println("Key not found in memtable")
-
-		valueCache := app.Cache.Search(key)
-		if valueCache == nil {
-			fmt.Print("Key not found in cache")
-
-			if app.Bloom.BloomSearch([]byte(key)) {
-				fmt.Println("Bloom filter indicates that the key might exist")
-			} else {
-				fmt.Println("Bloom filter indicates that the key does not exist")
-				return nil
-			}
-		} else {
-			fmt.Println("Read from cache", valueCache)
-			return valueCache
-		}
-	} else {
-		fmt.Println("Read from memtable: ", valueMemtable)
-		return valueMemtable
-	}
-
-	return nil
 
 }
 

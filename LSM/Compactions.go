@@ -275,8 +275,8 @@ func MergeFiles(filesInfo []*FileInfo, mainFile *os.File, indexFile *os.File, fi
 }
 
 func WriteBloom(mainFile *os.File, bloomFile *os.File, numOfLogs *int, offsetEnd *uint64, fileType string, leafNodes *[]*Node) (*Log, *Log) {
-	bloom := Bloom2{}
-	bloom.InitializeEmptyBloom2(*numOfLogs, 0.1)
+	bloom := Bloom{}
+	bloom.InitializeEmptyBloom(*numOfLogs, 0.1)
 
 	counter := 1
 	var offset int64
