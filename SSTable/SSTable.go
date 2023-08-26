@@ -29,6 +29,21 @@ type SSTable struct {
 	Metadata MerkleRoot
 }
 
+func PrintLogs(fileType string, generation string, level string) {
+	fmt.Println("-------------------------------")
+	fmt.Println("SSTable -", generation, "-", level)
+	fmt.Println("-------------------------------")
+	file, err := os.Open("./Data/SSTables/" + fileType + "/Data-" + generation + "-" + level + ".bin")
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		return
+	}
+	logs, _ := GetAllLogs(file, fileType)
+	for _, log := range logs {
+		fmt.Println("Key-", string(log.Key), "  ", "Value-", string(log.Value), log.Tombstone)
+	}
+}
+
 func GetALLLevels(dirPath string) []int {
 	var levels []int
 
@@ -217,7 +232,3 @@ func BuildSSTableSingle(sortedLogs []*Log, generation, level, SUMMARY_BLOCK_SIZE
 	WriteToTxtFile(generation, level, "TOC", "Single", TOCData, nil)
 	return nil
 }
-
-// SearchFromMultipleFiles - TODO:Algoritam otprilike-proveri da li se trazeni kljuc nalazi u BloomFilter-u,
-// ako se ne nalazi- predji na sledeci SSTable, ako si nasao-otvori Summary za dati SSTable nadji asocirani Log,
-//iscitaj entrije kako bi nasli odgovarajuci, kada se sve odradi-iscitaj SSTable
