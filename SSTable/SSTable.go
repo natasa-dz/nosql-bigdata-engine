@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 )
 
 //const (
@@ -26,6 +27,41 @@ type SSTable struct {
 	Filter     Bloom
 	//	TOC        TOCEntry
 	Metadata MerkleRoot
+}
+
+func GetALLLevels(dirPath string) []int {
+	var levels []int
+
+	// Read the directory and get a list of file and folder names
+	fileInfos, err := ioutil.ReadDir(dirPath)
+	if err != nil {
+		return nil
+	}
+
+	//find files from same level of LSM tree
+	for _, fileInfo := range fileInfos {
+		numbers := strings.Split(fileInfo.Name(), "-")
+		fileLevelSplit := strings.Split(numbers[2], ".")
+		fileLevel, err := strconv.Atoi(fileLevelSplit[0])
+		generation, err := strconv.Atoi(numbers[1])
+		if err != nil {
+			fmt.Println("Error, wrong file format:", err)
+			return nil
+		}
+		if generation == 2 {
+			levels = append(levels, fileLevel)
+		}
+	}
+
+	return levels
+}
+func ContainsElement(slice []int, element int) bool {
+	for _, value := range slice {
+		if value == element {
+			return true
+		}
+	}
+	return false
 }
 
 func BuildSSTable(sortedData []*Log, generation int, level int, sstableType string, summaryBlockSize int) {

@@ -2,6 +2,7 @@ package Menu
 
 import (
 	. "NAiSP/Log"
+	. "NAiSP/SSTable"
 	"bufio"
 	"fmt"
 	"math"
@@ -41,18 +42,24 @@ func WriteMainMenu() string {
 	return strings.ToUpper(retVal)
 }
 
-func CompactionMenu(maxLevelForCompaction int) int {
+func CompactionMenu(maxLevelForCompaction int, fileType string) int {
 	var levelNum string
 	var num int
 	var err error
 	for true {
+		levels := GetALLLevels("./Data/SSTables/" + fileType)
+		if len(levels) == 0 {
+			fmt.Println("Compaction not possible")
+			return 0
+		}
 		fmt.Println("Enter number of level to be compacted: ")
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			levelNum = scanner.Text()
 		}
 		num, err = strconv.Atoi(levelNum)
-		if err == nil && num <= maxLevelForCompaction {
+
+		if err == nil && num <= maxLevelForCompaction && ContainsElement(levels, num) {
 			break
 		}
 		fmt.Println("Invalid input...try again")
