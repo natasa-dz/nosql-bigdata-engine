@@ -38,7 +38,7 @@ func BuildSSTable(sortedData []*Log, generation int, level int, sstableType stri
 
 func GetAllLogs(file *os.File, sstableType string) ([]*Log, error) {
 	var data []*Log
-	if sstableType == "Single" {
+	if sstableType == "single" {
 		header, _ := ReadHeader(file)
 		data, err := ReadLogs(file, int64(header.LogsOffset), header.BloomOffset)
 		if err != nil {

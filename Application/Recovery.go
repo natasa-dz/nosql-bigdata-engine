@@ -16,13 +16,16 @@ func (app *Application) Recover(numOfFiles string) {
 	logsToInsertInMemtable, numOfLogsInLastWal := getAllLogsForMemtable(walFiles, SSData, numOfFiles)
 
 	for i := len(logsToInsertInMemtable) - 1; i >= 0; i-- {
-		if logsToInsertInMemtable[i].Tombstone == false {
+		/*if logsToInsertInMemtable[i].Tombstone == false {
 			app.Memtable.Insert(logsToInsertInMemtable[i], numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
 			app.Cache.Insert(logsToInsertInMemtable[i])
-		} /*else {
+		} else {
 			app.Memtable.Delete(string(log.Key))
 			app.Cache.delete(string...)
 		}*/
+
+		app.Memtable.Insert(logsToInsertInMemtable[i], numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
+		app.Cache.Insert(logsToInsertInMemtable[i])
 	}
 	app.NumOfWalInserts = numOfLogsInLastWal
 }

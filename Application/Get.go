@@ -14,34 +14,47 @@ func (app *Application) Get(key string) *Log {
 
 	dataPath := "./Data/SSTables/" + strings.Title(app.ConfigurationData.NumOfFiles) + "/"
 
+	var foundLog *Log
+
+	foundLog = app.CheckMemtable(key)
+	if foundLog == nil {
+		foundLog = app.CheckCache(key)
+		if foundLog == nil {
+			foundLog = app.CheckSSTable(dataPath, key)
+
+		}
+	}
+
+	return foundLog
+}
+
+func (app *Application) CheckMemtable(key string) *Log { //vraca da li je Log pronadjen i ako jeste da li je obrisan
 	valueMemtable := app.Memtable.Search(key)
 	if valueMemtable == nil {
 		fmt.Println("Key not found in memtable")
-
-		valueCache := app.Cache.Search(key)
-		if valueCache == nil {
-			fmt.Println("Key not found in cache")
-
-			foundLog := CheckSSTable(dataPath, key)
-			if foundLog == nil {
-				return nil
-			} else {
-				return foundLog
-			}
-		} else {
-			fmt.Println("Read from cache: ", string(valueCache.Value))
-			return valueCache
-		}
-	} else {
-		fmt.Println("Read from memtable: ", string(valueMemtable.Value))
+		return nil
+	} else if valueMemtable.Tombstone == true {
+		fmt.Println("Key found in memtable is deleted")
 		return valueMemtable
 	}
 
-	return nil
-
+	fmt.Println("Read from memtable: ")
+	return valueMemtable
 }
 
-func CheckSSTable(dataPath string, key string) *Log {
+func (app *Application) CheckCache(key string) *Log {
+
+	valueCache := app.Cache.Search(key)
+	if valueCache == nil {
+		fmt.Println("Key not found in cache")
+		return nil
+	}
+
+	fmt.Println("Key read from cache")
+	return valueCache
+}
+
+func (app *Application) CheckSSTable(dataPath string, key string) *Log {
 	bloomFiles := fileManager.GetFilesWithWord(dataPath, "Bloom")
 
 	for _, bloomFileName := range bloomFiles {

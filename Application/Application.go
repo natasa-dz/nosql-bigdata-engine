@@ -69,6 +69,14 @@ func (app *Application) StartApp() {
 			} else {
 				menu.OutOfTokensNotification()
 			}
+		} else if userInput == "3" {
+			key := menu.DELETE_Menu()
+			isDeleted := app.Delete(key)
+			if isDeleted {
+				fmt.Println("Log is succesfuly deleted")
+			} else {
+				fmt.Println("Key is not deleted")
+			}
 		} else if userInput == "6" {
 			levelNum := menu.CompactionMenu(app.ConfigurationData.MaxNumOfLSMLevels - 1)
 			if app.ConfigurationData.NumOfFiles == "single" {
