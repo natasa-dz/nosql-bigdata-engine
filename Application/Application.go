@@ -47,6 +47,7 @@ func (app *Application) StartApp() {
 			app.changeWalFile()
 		}
 		userInput = menu.WriteMainMenu()
+
 		if userInput == "1" {
 			if app.TokenBucket.MakeRequest() { //proveri ima li slobodnih zahteva
 				key, value := menu.PUT_Menu()                                                                                                                  //iz menija uzmi vrednosti

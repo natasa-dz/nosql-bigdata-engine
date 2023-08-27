@@ -31,7 +31,12 @@ func (app *Application) Delete(key string) bool {
 
 		path := "./Data/SSTables/" + strings.Title(app.ConfigurationData.NumOfFiles) + "/"
 
-		foundLog = app.CheckSSTable(path, key)
+		if app.ConfigurationData.NumOfFiles == "multiple" {
+			foundLog = app.CheckSSTableMultiple(path, key)
+		} else {
+			foundLog = app.CheckSSTableSingle(path, key)
+		}
+
 		if foundLog != nil {
 			foundLog.Tombstone = true
 			app.Memtable.Insert(foundLog, app.ConfigurationData.NumOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)

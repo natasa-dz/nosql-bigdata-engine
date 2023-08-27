@@ -7,6 +7,8 @@ import (
 	sstable "NAiSP/SSTable"
 	"fmt"
 	"io"
+	"os"
+	"strconv"
 	"strings"
 )
 
@@ -20,8 +22,11 @@ func (app *Application) Get(key string) *Log {
 	if foundLog == nil {
 		foundLog = app.CheckCache(key)
 		if foundLog == nil {
-			foundLog = app.CheckSSTable(dataPath, key)
-
+			if app.ConfigurationData.NumOfFiles == "multiple" {
+				foundLog = app.CheckSSTableMultiple(dataPath, key)
+			} else {
+				foundLog = app.CheckSSTableSingle(dataPath, key)
+			}
 		}
 	}
 
@@ -54,14 +59,45 @@ func (app *Application) CheckCache(key string) *Log {
 	return valueCache
 }
 
-func (app *Application) CheckSSTable(dataPath string, key string) *Log {
+func (app *Application) CheckSSTableSingle(dataPath string, key string) *Log {
+	sstableFiles := fileManager.GetFilesWithWord(dataPath, "Data")
+	sstableFiles = fileManager.SortFileNames(sstableFiles, true)
+
+	for _, ssTableFileName := range sstableFiles {
+		sstableFile := fileManager.Open(dataPath + ssTableFileName)
+		if sstableFile == nil {
+			fmt.Println("Error reading sstable file: ", ssTableFileName)
+		}
+		header, err := sstable.ReadHeader(sstableFile)
+		if err != nil {
+			fmt.Println("Error reading sstable header")
+			return nil
+		}
+
+		bloom := bloomFilter.ReadBloom(sstableFile, int64(header.BloomOffset))
+
+		if bloom.BloomSearch([]byte(key)) {
+			fmt.Println("Bloom filter indicates that the key might exist in file ", ssTableFileName)
+			foundOffset := app.GetOffset(dataPath+ssTableFileName, "", key, header)
+			if foundOffset != -1 {
+				foundLog := GetValueFromDataFile(foundOffset, dataPath+ssTableFileName)
+				return foundLog
+			}
+
+		}
+	}
+
+	fmt.Println("Bloom filter indicates that the key does not exist")
+	return nil
+}
+
+func (app *Application) CheckSSTableMultiple(dataPath string, key string) *Log {
 	bloomFiles := fileManager.GetFilesWithWord(dataPath, "Bloom")
+	bloomFiles = fileManager.SortFileNames(bloomFiles, true)
 
 	for _, bloomFileName := range bloomFiles {
-		numbers := strings.Split(bloomFileName, "-")
-		generation := numbers[1]
-		level := numbers[2]
-		fileNumber := generation + "-" + level
+		deserializedFN := fileManager.DeserializeFileName(bloomFileName)
+		fileNumber := strconv.Itoa(deserializedFN.Generation) + "-" + strconv.Itoa(deserializedFN.Level)
 		bloomFile := fileManager.Open(dataPath + bloomFileName)
 
 		if bloomFile != nil {
@@ -69,9 +105,15 @@ func (app *Application) CheckSSTable(dataPath string, key string) *Log {
 
 			if bloom.BloomSearch([]byte(key)) {
 				fmt.Println("Bloom filter indicates that the key might exist in file ", bloomFileName)
-				foundOffset := GetOffset(dataPath, fileNumber, key)
+				foundOffset := app.GetOffset(dataPath, fileNumber, key, nil)
 				if foundOffset != -1 {
-					pathDataFile := dataPath + "Data-" + fileNumber
+					var pathDataFile string
+					if app.ConfigurationData.NumOfFiles == "multiple" {
+						pathDataFile = dataPath + "Data-" + fileNumber
+					} else {
+						pathDataFile = dataPath
+					}
+
 					foundLog := GetValueFromDataFile(foundOffset, pathDataFile)
 					return foundLog
 				}
@@ -84,27 +126,42 @@ func (app *Application) CheckSSTable(dataPath string, key string) *Log {
 	return nil
 }
 
-func GetOffset(path string, fileNumber string, key string) int64 {
-	summaryPath := path + "Summary-"
-	summaryPath += fileNumber
+func (app *Application) GetOffset(path string, fileNumber string, key string, header *sstable.Header) int64 {
+	var summaryFile *os.File
 
-	summaryFile := fileManager.Open(summaryPath)
+	if app.ConfigurationData.NumOfFiles == "multiple" {
+		summaryPath := path + "Summary-"
+		summaryPath += fileNumber
 
-	startKey, endKey := sstable.ReadSummaryHeader(summaryFile, 0)
+		summaryFile = fileManager.Open(summaryPath)
+	} else {
+		summaryFile = fileManager.Open(path)
+	}
+
+	startKey, endKey := sstable.ReadSummaryHeader(summaryFile, int64(header.SummaryOffset))
 
 	if key >= startKey && key <= endKey {
-		summary, err := sstable.ReadSummary(summaryFile, 0)
-		if err == nil {
-			indexFile := fileManager.Open(path + "Index-" + fileNumber)
-			indexStart, indexEnd := sstable.SearchIndexEntry(summary.Entries, []byte(key))
-			foundOffset := sstable.FindKeyOffset(indexFile, key, int64(indexStart.Offset), int64(indexEnd.Offset))
+		var summary *sstable.Summary
+		if app.ConfigurationData.NumOfFiles == "multiple" {
+			summary, _ = sstable.ReadSummary(summaryFile, 0)
+		} else {
+			summary, _ = sstable.ReadSummary(summaryFile, int64(header.SummaryOffset))
+		}
 
-			if foundOffset != -1 {
-				fmt.Println("Key found in SStable-", fileNumber)
-				return foundOffset
-			} else {
-				fmt.Println("Key not found in SStable-", fileNumber)
-			}
+		var indexFile *os.File
+		if app.ConfigurationData.NumOfFiles == "multiple" {
+			indexFile = fileManager.Open(path + "Index-" + fileNumber)
+		} else {
+			indexFile = summaryFile
+		}
+		indexStart, indexEnd := sstable.SearchIndexEntry(summary.Entries, []byte(key))
+		foundOffset := sstable.FindKeyOffset(indexFile, key, int64(indexStart.Offset), int64(indexEnd.Offset))
+
+		if foundOffset != -1 {
+			fmt.Println("Key found in SStable-", fileNumber)
+			return foundOffset
+		} else {
+			fmt.Println("Key not found in SStable-", fileNumber)
 		}
 	} else {
 		fmt.Println("Key not found in SSTable-", fileNumber)
