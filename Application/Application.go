@@ -78,7 +78,10 @@ func (app *Application) StartApp() {
 				fmt.Println("Key is not deleted")
 			}
 		} else if userInput == "6" {
-			levelNum := menu.CompactionMenu(app.ConfigurationData.MaxNumOfLSMLevels - 1)
+			levelNum := menu.CompactionMenu(app.ConfigurationData.MaxNumOfLSMLevels-1, app.ConfigurationData.NumOfFiles)
+			if levelNum == 0 {
+				continue
+			}
 			if app.ConfigurationData.NumOfFiles == "single" {
 				LSM.SizeTieredCompactionSingle(&levelNum, &app.ConfigurationData.NumOfSummarySegmentLogs, &app.ConfigurationData.MaxNumOfSSTablesPerLevel, &app.ConfigurationData.MaxNumOfLSMLevels)
 			} else {
