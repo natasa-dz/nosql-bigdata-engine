@@ -112,7 +112,7 @@ func SortFileNames(fileNamesStr []string, ascending bool) []string { //ascending
 		}
 	} else {
 		compareFunction = func(i, j int) bool {
-			return true
+			return fileNames[i].Level > fileNames[j].Level || fileNames[i].Level == fileNames[j].Level && fileNames[i].Generation < fileNames[j].Generation
 		}
 	}
 

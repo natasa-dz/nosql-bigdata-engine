@@ -1,8 +1,9 @@
 package main
 
 import (
+	application "NAiSP/Application"
 	. "NAiSP/Log"
-	. "NAiSP/SSTable"
+	menu "NAiSP/Menu"
 	"sort"
 )
 
@@ -13,11 +14,24 @@ func SortData(entries []*Log) []*Log {
 	return entries
 }
 func main() {
+	/*path := "./Data/SSTables/Single/"
+	f1 := fileManager.Open(path + "Data-1-1.bin")
+	f2 := fileManager.Open(path + "Data-2-1.bin")
+	f3 := fileManager.Open(path + "Data-3-1.bin")
+	f4 := fileManager.Open(path + "Data-4-1.bin")
+	t1, _ := sstable.GetAllLogs(f1, "single")
+	t2, _ := sstable.GetAllLogs(f2, "single")
+	t3, _ := sstable.GetAllLogs(f3, "single")
+	t4, _ := sstable.GetAllLogs(f4, "single")
 
-	PrintLogs("Multiple", "1", "2")
-	/*choiceOfConfig := menu.WriteAppInitializationMenu()
+	fmt.Println(t1)
+	fmt.Println(t2)
+	fmt.Println(t3)
+	fmt.Println(t4)*/
+
+	choiceOfConfig := menu.WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
-	app.StartApp()*/
+	app.StartApp()
 	//============================MENU TESTS======================
 	//l1 := Log{Key: []byte("key1"), Value: []byte("val")}
 	//l2 := Log{Key: []byte("key2"), Value: []byte("val")}

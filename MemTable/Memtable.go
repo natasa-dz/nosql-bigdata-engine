@@ -52,7 +52,7 @@ func (table *Memtable) TableFull() bool {
 func (table *Memtable) Insert(data *Log, numOfFiles string, summaryBlockSize int, fileType string) {
 	foundLog := table.tableStruct.Search(string(data.Key))
 	if foundLog != nil {
-		foundLog.Value = (*data).Value
+		foundLog = data
 	} else {
 		table.tableStruct.Insert(data)
 		if table.TableFull() {
@@ -73,4 +73,16 @@ func (table *Memtable) Search(key string) *Log {
 		return foundLog
 	}
 	return nil
+}
+
+func (table *Memtable) SearchInterval(minKey, maxKey string) []*Log {
+	var ret []*Log
+	logs := table.tableStruct.GetAllLogs()
+	for _, log := range logs {
+		if string(log.Key) >= minKey && string(log.Key) <= maxKey {
+			ret = append(ret, log)
+		}
+	}
+
+	return ret
 }

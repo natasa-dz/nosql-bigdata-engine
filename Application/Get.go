@@ -128,17 +128,18 @@ func (app *Application) CheckSSTableMultiple(dataPath string, key string) *Log {
 
 func (app *Application) GetOffset(path string, fileNumber string, key string, header *sstable.Header) int64 {
 	var summaryFile *os.File
+	var startKey, endKey string
 
 	if app.ConfigurationData.NumOfFiles == "multiple" {
 		summaryPath := path + "Summary-"
 		summaryPath += fileNumber
 
 		summaryFile = fileManager.Open(summaryPath)
+		startKey, endKey = sstable.ReadSummaryHeader(summaryFile, 0)
 	} else {
 		summaryFile = fileManager.Open(path)
+		startKey, endKey = sstable.ReadSummaryHeader(summaryFile, int64(header.SummaryOffset))
 	}
-
-	startKey, endKey := sstable.ReadSummaryHeader(summaryFile, int64(header.SummaryOffset))
 
 	if key >= startKey && key <= endKey {
 		var summary *sstable.Summary
@@ -154,8 +155,8 @@ func (app *Application) GetOffset(path string, fileNumber string, key string, he
 		} else {
 			indexFile = summaryFile
 		}
-		indexStart, indexEnd := sstable.SearchIndexEntry(summary.Entries, []byte(key))
-		foundOffset := sstable.FindKeyOffset(indexFile, key, int64(indexStart.Offset), int64(indexEnd.Offset))
+		indexStart := sstable.SearchIndexEntry(summary.Entries, []byte(key))
+		foundOffset := sstable.FindKeyOffset(indexFile, key, int64(indexStart.Offset))
 
 		if foundOffset != -1 {
 			fmt.Println("Key found in SStable-", fileNumber)
@@ -173,8 +174,6 @@ func (app *Application) GetOffset(path string, fileNumber string, key string, he
 func GetValueFromDataFile(offset int64, path string) *Log {
 	dataFile := fileManager.Open(path)
 	dataFile.Seek(offset, io.SeekStart)
-	//logs, _ := sstable.GetAllLogs(dataFile, "Multiple")
-	//fmt.Println(logs)
 	if dataFile != nil {
 		readLog, err := ReadLog(dataFile)
 		if err == nil {

@@ -78,6 +78,12 @@ func (app *Application) StartApp() {
 			} else {
 				fmt.Println("Key is not deleted")
 			}
+		} else if userInput == "5" {
+			minKey, maxKey := menu.RANGESCAN_Menu()
+			foundLogs := app.RangeScan(minKey, maxKey)
+
+			menu.LIST_RANGESCAN_PaginationResponse(foundLogs, app.ConfigurationData.MenuPaginationSize)
+
 		} else if userInput == "6" {
 			levelNum := menu.CompactionMenu(app.ConfigurationData.MaxNumOfLSMLevels-1, app.ConfigurationData.NumOfFiles)
 			if levelNum == 0 {

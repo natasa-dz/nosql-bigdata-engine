@@ -46,6 +46,7 @@ func ReadFile(fileName string) []string {
 }
 
 func main() {
+
 	words1 := ReadFile("text.txt")
 	var hll HLL
 	hll.InitializeSimHash(16)

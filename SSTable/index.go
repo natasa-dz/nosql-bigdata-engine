@@ -101,12 +101,17 @@ func SerializeIndexes(Entries []*IndexEntry) []byte {
 	return serializedIndexes.Bytes()
 }
 
-func FindKeyOffset(file *os.File, key string, offsetStart int64, offsetEnd int64) int64 {
+func FindKeyOffset(file *os.File, key string, offsetStart int64) int64 {
 
 	var loaded *IndexEntry
 
-	for offsetStart <= offsetEnd {
+	for true {
 		loaded, _ = ReadIndexEntry(file, offsetStart)
+
+		if loaded == nil {
+			break
+		}
+
 		if loaded.Key == key {
 			return int64(loaded.Offset)
 		}
@@ -119,4 +124,28 @@ func FindKeyOffset(file *os.File, key string, offsetStart int64, offsetEnd int64
 	}
 
 	return -1
+}
+
+func FindKeyOffsetsInInterval(file *os.File, keyMin string, keyMax string, offsetStart int64) []int64 {
+	var foundOffsets []int64
+
+	for true {
+		loaded, _ := ReadIndexEntry(file, offsetStart)
+
+		if loaded == nil {
+			break
+		}
+
+		if loaded.Key >= keyMin && loaded.Key <= keyMax {
+			foundOffsets = append(foundOffsets, int64(loaded.Offset))
+		}
+
+		offsetStart, _ = file.Seek(0, io.SeekCurrent)
+
+		if loaded.Key >= keyMax {
+			break
+		}
+	}
+
+	return foundOffsets
 }
