@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 )
 
 //const (
@@ -23,9 +24,59 @@ type SSTable struct {
 	Data       []Log
 	Index      Index
 	Summary    Summary
-	Filter     Bloom2
+	Filter     Bloom
 	//	TOC        TOCEntry
 	Metadata MerkleRoot
+}
+
+func PrintLogs(fileType string, generation string, level string) {
+	fmt.Println("-------------------------------")
+	fmt.Println("SSTable -", generation, "-", level)
+	fmt.Println("-------------------------------")
+	file, err := os.Open("./Data/SSTables/" + fileType + "/Data-" + generation + "-" + level + ".bin")
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		return
+	}
+	logs, _ := GetAllLogs(file, fileType)
+	for _, log := range logs {
+		fmt.Println("Key-", string(log.Key), "  ", "Value-", string(log.Value), log.Tombstone)
+	}
+}
+
+func GetALLLevels(dirPath string) []int {
+	var levels []int
+
+	// Read the directory and get a list of file and folder names
+	fileInfos, err := ioutil.ReadDir(dirPath)
+	if err != nil {
+		return nil
+	}
+
+	//find files from same level of LSM tree
+	for _, fileInfo := range fileInfos {
+		numbers := strings.Split(fileInfo.Name(), "-")
+		fileLevelSplit := strings.Split(numbers[2], ".")
+		fileLevel, err := strconv.Atoi(fileLevelSplit[0])
+		generation, err := strconv.Atoi(numbers[1])
+		if err != nil {
+			fmt.Println("Error, wrong file format:", err)
+			return nil
+		}
+		if generation == 2 {
+			levels = append(levels, fileLevel)
+		}
+	}
+
+	return levels
+}
+func ContainsElement(slice []int, element int) bool {
+	for _, value := range slice {
+		if value == element {
+			return true
+		}
+	}
+	return false
 }
 
 func BuildSSTable(sortedData []*Log, generation int, level int, sstableType string, summaryBlockSize int) {
@@ -38,7 +89,7 @@ func BuildSSTable(sortedData []*Log, generation int, level int, sstableType stri
 
 func GetAllLogs(file *os.File, sstableType string) ([]*Log, error) {
 	var data []*Log
-	if sstableType == "Single" {
+	if sstableType == "single" {
 		header, _ := ReadHeader(file)
 		data, err := ReadLogs(file, int64(header.LogsOffset), header.BloomOffset)
 		if err != nil {
@@ -181,7 +232,3 @@ func BuildSSTableSingle(sortedLogs []*Log, generation, level, SUMMARY_BLOCK_SIZE
 	WriteToTxtFile(generation, level, "TOC", "Single", TOCData, nil)
 	return nil
 }
-
-// SearchFromMultipleFiles - TODO:Algoritam otprilike-proveri da li se trazeni kljuc nalazi u BloomFilter-u,
-// ako se ne nalazi- predji na sledeci SSTable, ako si nasao-otvori Summary za dati SSTable nadji asocirani Log,
-//iscitaj entrije kako bi nasli odgovarajuci, kada se sve odradi-iscitaj SSTable

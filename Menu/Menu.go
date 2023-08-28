@@ -1,7 +1,9 @@
 package Menu
 
 import (
+	. "NAiSP/HLL"
 	. "NAiSP/Log"
+	. "NAiSP/SSTable"
 	"bufio"
 	"fmt"
 	"math"
@@ -34,6 +36,7 @@ func WriteMainMenu() string {
 	fmt.Println("4. List Logs by prefix [LIST]")
 	fmt.Println("5. List Logs by range [RANGE SCAN]")
 	fmt.Println("6. Compact level of LSM tree")
+	fmt.Println("7. HLL menu")
 	fmt.Println("X. Exit [EXIT]")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
@@ -41,24 +44,71 @@ func WriteMainMenu() string {
 	return strings.ToUpper(retVal)
 }
 
-func CompactionMenu(maxLevelForCompaction int) int {
+func CompactionMenu(maxLevelForCompaction int, fileType string) int {
 	var levelNum string
 	var num int
 	var err error
 	for true {
+		levels := GetALLLevels("./Data/SSTables/" + fileType)
+		if len(levels) == 0 {
+			fmt.Println("Compaction not possible")
+			return 0
+		}
 		fmt.Println("Enter number of level to be compacted: ")
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			levelNum = scanner.Text()
 		}
 		num, err = strconv.Atoi(levelNum)
-		if err == nil && num <= maxLevelForCompaction {
+
+		if err == nil && num <= maxLevelForCompaction && ContainsElement(levels, num) {
 			break
 		}
 		fmt.Println("Invalid input...try again")
 	}
 	fmt.Println("Compacting a level....")
 	return num
+}
+
+func HLLMenu() {
+	var userInput string
+
+	for userInput != "X" {
+		var hlls = DeserializeHLLs()
+		fmt.Println("===========================HLL MENU====================")
+		fmt.Println("1. Create new HLL")
+		fmt.Println("2. Add element to HLL")
+		fmt.Println("3. Get cardinality")
+		fmt.Println("X. Exit [EXIT]")
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		userInput = scanner.Text()
+		userInput = strings.ToUpper(userInput)
+		if userInput == "1" {
+			var hll HLL
+			fmt.Println("-----------------------------------------------------")
+			fmt.Println("Enter name: ")
+			scanner2 := bufio.NewScanner(os.Stdin)
+			scanner2.Scan()
+			hll.Initialize(6, scanner2.Text())
+			*hlls = append(*hlls, hll)
+			Serialize(hlls)
+		} else if userInput == "2" {
+			hllNum := ChooseHLL(hlls)
+			fmt.Println("-----------------------------------------------------")
+			fmt.Println("Enter new element: ")
+			scanner2 := bufio.NewScanner(os.Stdin)
+			scanner2.Scan()
+			(*hlls)[hllNum-1].Add(scanner2.Text())
+			numOfEl := (*hlls)[hllNum-1].Estimate()
+			fmt.Println("Estimating that it has ", math.Round(numOfEl), "elements")
+			Serialize(hlls)
+		} else if userInput == "3" {
+			hllNum := ChooseHLL(hlls)
+			numOfEl := (*hlls)[hllNum-1].Estimate()
+			fmt.Println("Estimating that it has ", math.Round(numOfEl), "elements")
+		}
+	}
 }
 
 func PUT_Menu() ([]byte, []byte) {

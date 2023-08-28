@@ -6,8 +6,10 @@ import (
 	wal "NAiSP/WriteAheadLog"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 func (app *Application) Recover(numOfFiles string) {
@@ -16,13 +18,16 @@ func (app *Application) Recover(numOfFiles string) {
 	logsToInsertInMemtable, numOfLogsInLastWal := getAllLogsForMemtable(walFiles, SSData, numOfFiles)
 
 	for i := len(logsToInsertInMemtable) - 1; i >= 0; i-- {
-		if logsToInsertInMemtable[i].Tombstone == false {
+		/*if logsToInsertInMemtable[i].Tombstone == false {
 			app.Memtable.Insert(logsToInsertInMemtable[i], numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
 			app.Cache.Insert(logsToInsertInMemtable[i])
-		} /*else {
+		} else {
 			app.Memtable.Delete(string(log.Key))
 			app.Cache.delete(string...)
 		}*/
+
+		app.Memtable.Insert(logsToInsertInMemtable[i], numOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
+		app.Cache.Insert(logsToInsertInMemtable[i])
 	}
 	app.NumOfWalInserts = numOfLogsInLastWal
 }
@@ -70,17 +75,17 @@ func Contains(SS []*Log, toCheck *Log) bool {
 }
 
 func extractDataFromSSFile(numOfFiles string) []*Log {
-	SSFile := getLatestSSTableFile(numOfFiles)
-	if SSFile == nil { //prazan direktorijum
+	SSFile, _ := FindMostRecentFile(numOfFiles)
+	if SSFile == "" { //prazan direktorijum
 		return nil
 	}
-	openedFile, err := os.Open("Data/SSTables/" + strings.Title(numOfFiles) + "/" + SSFile.Name())
+	openedFile, err := os.Open(SSFile)
 	if err != nil {
 		fmt.Println("Error opening SS file:", err)
 		return nil
 	}
 	defer openedFile.Close()
-	openedFileInfo, _ := os.Stat("Data/SSTables/" + strings.Title(numOfFiles) + "/" + SSFile.Name())
+	openedFileInfo, _ := os.Stat(SSFile)
 
 	if numOfFiles == "single" {
 		header, _ := ss.ReadHeader(openedFile)
@@ -91,28 +96,30 @@ func extractDataFromSSFile(numOfFiles string) []*Log {
 	retVal, _ := ReadLogs(openedFile, 0, uint64(openedFileInfo.Size()))
 	return retVal
 }
+func FindMostRecentFile(numOfFiles string) (string, error) {
+	var mostRecentFile string
+	var mostRecentTime time.Time
 
-func getLatestSSTableFile(numOfFiles string) os.DirEntry {
-	var retVal os.DirEntry
-	numOfFiles = strings.Title(numOfFiles)
-	files, err := os.ReadDir("Data/SSTables/" + numOfFiles + "/")
-	if err != nil {
-		fmt.Println("ERR...Cannot gather all SStableFiles")
-		return nil
-	}
-	for _, file := range files {
-		if strings.HasPrefix(file.Name(), "Data-") {
-			if retVal == nil {
-				retVal = file
-				break
-			}
-			if file.Name() > retVal.Name() {
-				retVal = file //trebalo bi da osigura da se dobije poslednja generacija
+	err := filepath.Walk("Data/SSTables/"+numOfFiles+"/", func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			modTime := info.ModTime()
+			numbers := strings.Split(info.Name(), "-")
+			if modTime.After(mostRecentTime) && numbers[0] == "Data" {
+				mostRecentTime = modTime
+				mostRecentFile = filePath
 			}
 		}
+		return nil
+	})
 
+	if err != nil {
+		return "", err
 	}
-	return retVal
+	fmt.Println(mostRecentFile)
+	return mostRecentFile, nil
 }
 
 func getAllWalFiles(numOfFiles string) []os.DirEntry {

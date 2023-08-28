@@ -9,6 +9,7 @@ import (
 	menu "NAiSP/Menu"
 	bucket "NAiSP/TokenBucket"
 	wal "NAiSP/WriteAheadLog"
+	"fmt"
 	"os"
 	"time"
 )
@@ -36,6 +37,7 @@ func InitializeApp(choice string) *Application {
 	app.Recover(app.ConfigurationData.NumOfFiles)
 	app.WalFile, _ = wal.LoadLatestWAL(app.ConfigurationData.NumOfFiles)
 	app.TokenBucket = bucket.CreateBucket(app.ConfigurationData.TokenBucketSize, time.Duration(app.ConfigurationData.TokenBucketRefreshTime))
+
 	return &app
 }
 func (app *Application) StartApp() {
@@ -45,6 +47,7 @@ func (app *Application) StartApp() {
 			app.changeWalFile()
 		}
 		userInput = menu.WriteMainMenu()
+
 		if userInput == "1" {
 			if app.TokenBucket.MakeRequest() { //proveri ima li slobodnih zahteva
 				key, value := menu.PUT_Menu()                                                                                                                  //iz menija uzmi vrednosti
@@ -56,15 +59,40 @@ func (app *Application) StartApp() {
 			} else {
 				menu.OutOfTokensNotification()
 			}
+		} else if userInput == "2" {
+			if app.TokenBucket.MakeRequest() {
+				key := menu.GET_Menu()
+				foundLog := app.Get(key)
+				if foundLog != nil {
+					fmt.Println("Found value: ", string(foundLog.Value))
+					app.Cache.Insert(foundLog)
+				}
+			} else {
+				menu.OutOfTokensNotification()
+			}
+		} else if userInput == "3" {
+			key := menu.DELETE_Menu()
+			isDeleted := app.Delete(key)
+			if isDeleted {
+				fmt.Println("Log is succesfuly deleted")
+			} else {
+				fmt.Println("Key is not deleted")
+			}
 		} else if userInput == "6" {
-			levelNum := menu.CompactionMenu(app.ConfigurationData.MaxNumOfLSMLevels - 1)
+			levelNum := menu.CompactionMenu(app.ConfigurationData.MaxNumOfLSMLevels-1, app.ConfigurationData.NumOfFiles)
+			if levelNum == 0 {
+				continue
+			}
 			if app.ConfigurationData.NumOfFiles == "single" {
 				LSM.SizeTieredCompactionSingle(&levelNum, &app.ConfigurationData.NumOfSummarySegmentLogs, &app.ConfigurationData.MaxNumOfSSTablesPerLevel, &app.ConfigurationData.MaxNumOfLSMLevels)
 			} else {
 				LSM.SizeTieredCompactionMultiple(&levelNum, &app.ConfigurationData.NumOfSummarySegmentLogs, &app.ConfigurationData.MaxNumOfSSTablesPerLevel, &app.ConfigurationData.MaxNumOfLSMLevels)
 			}
+		} else if userInput == "7" {
+			menu.HLLMenu()
 		}
 	}
+
 }
 
 func (app *Application) changeWalFile() { //fja za promenu Wal file kad stigne do konfigurabilnog broja segmenata u sebi
