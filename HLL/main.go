@@ -1,4 +1,4 @@
-package main
+package HLL
 
 import (
 	"encoding/binary"
@@ -28,18 +28,15 @@ func classicCountDistinct(input []uint32) int {
 	return len(m)
 }
 func main() {
-
 	bs, is := getRandomData()
 	dt := classicCountDistinct(is)
 	var hll2 HLL
-	hll2.InitializeSimHash(6)
+	hll2.Initialize(6, "Proba")
 	fmt.Println("words", dt)
 	for _, b := range bs {
-		hll2.add(string(b))
+		hll2.Add(string(b))
 	}
 	est2 := hll2.Estimate()
 	fmt.Println("estimated", est2)
 	hll2.Name = "HLL1"
-	//people := []HLL{hll2}
-
 }

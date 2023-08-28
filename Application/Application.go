@@ -88,6 +88,8 @@ func (app *Application) StartApp() {
 			} else {
 				LSM.SizeTieredCompactionMultiple(&levelNum, &app.ConfigurationData.NumOfSummarySegmentLogs, &app.ConfigurationData.MaxNumOfSSTablesPerLevel, &app.ConfigurationData.MaxNumOfLSMLevels)
 			}
+		} else if userInput == "7" {
+			menu.HLLMenu()
 		}
 	}
 
