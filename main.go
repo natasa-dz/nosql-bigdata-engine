@@ -4,6 +4,7 @@ import (
 	application "NAiSP/Application"
 	. "NAiSP/Log"
 	menu "NAiSP/Menu"
+	. "NAiSP/SSTable"
 	test "NAiSP/Testing"
 	"sort"
 )
@@ -15,7 +16,7 @@ func SortData(entries []*Log) []*Log {
 	return entries
 }
 func main() {
-	//PrintLogs("single", "1", "2")
+	PrintLogs("single", "1", "2")
 	choiceOfConfig := menu.WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
 	test.InitializeData(app)
