@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"io"
 	"os"
+	"strings"
 )
 
 type Summary struct {
@@ -178,7 +179,7 @@ func ReadSummary(file *os.File, offset int64) (*Summary, error) {
 	return indexEntry, nil
 }*/
 
-func SearchIndexEntry(entries []*IndexEntry, key []byte) (*IndexEntry, *IndexEntry) {
+func SearchIndexEntry(entries []*IndexEntry, key []byte) *IndexEntry {
 	// Binary search implementation to find the closest index entry
 	low, high := 0, len(entries)-1
 	for low <= high {
@@ -187,7 +188,7 @@ func SearchIndexEntry(entries []*IndexEntry, key []byte) (*IndexEntry, *IndexEnt
 
 		if bytes.Compare(key, currentKey) == 0 {
 			// Found an exact match
-			return entries[mid], entries[mid]
+			return entries[mid]
 		} else if bytes.Compare(key, currentKey) < 0 {
 			// Key is smaller, search in the left half
 			high = mid - 1
@@ -199,5 +200,30 @@ func SearchIndexEntry(entries []*IndexEntry, key []byte) (*IndexEntry, *IndexEnt
 
 	// If the loop terminates without finding an exact match, 'low' will point to the closest larger element.
 	// We return the previous index entry as the closest match.
-	return entries[low-1], entries[low]
+
+	return entries[low-1]
+}
+
+func SearchIndexEntryPrefix(entries []*IndexEntry, prefix string) *IndexEntry {
+	low, high := 0, len(entries)-1
+	for low <= high {
+		mid := (low + high) / 2
+		currentKey := entries[mid].Key
+
+		if currentKey == prefix {
+			// Found an exact match
+			return entries[mid]
+		} else if strings.HasPrefix(currentKey, prefix) {
+			// Has prefix
+			return entries[mid]
+		} else if prefix < currentKey {
+			// Prefix is smaller, search in the left half
+			high = mid - 1
+		} else {
+			// Prefix is larger, search in the right half
+			low = mid + 1
+		}
+	}
+
+	return entries[low-1]
 }

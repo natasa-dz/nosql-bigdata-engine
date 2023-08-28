@@ -6,11 +6,11 @@
   "Trashold" : 0.8,
   "BTreeDegree" : 2,
   "SkipListMaxHeight": 10,
-  "NumOfFiles": "single",
+  "NumOfFiles": "multiple",
   "TokenBucketSize": 2,
   "TokenBucketRefreshTime": 10000,
   "CacheSize": 2,
-  "MenuPaginationSize": 5,
+  "MenuPaginationSize": 2,
   "MaxNumOfLSMLevels": 4,
   "MaxNumOfSSTablesPerLevel": 2
 }

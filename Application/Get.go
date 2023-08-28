@@ -65,6 +65,7 @@ func (app *Application) CheckSSTableSingle(dataPath string, key string) *Log {
 
 	for _, ssTableFileName := range sstableFiles {
 		sstableFile := fileManager.Open(dataPath + ssTableFileName)
+		defer sstableFile.Close()
 		if sstableFile == nil {
 			fmt.Println("Error reading sstable file: ", ssTableFileName)
 		}
@@ -97,8 +98,9 @@ func (app *Application) CheckSSTableMultiple(dataPath string, key string) *Log {
 
 	for _, bloomFileName := range bloomFiles {
 		deserializedFN := fileManager.DeserializeFileName(bloomFileName)
-		fileNumber := strconv.Itoa(deserializedFN.Generation) + "-" + strconv.Itoa(deserializedFN.Level)
+		fileNumber := strconv.Itoa(deserializedFN.Generation) + "-" + strconv.Itoa(deserializedFN.Level) + ".bin"
 		bloomFile := fileManager.Open(dataPath + bloomFileName)
+		defer bloomFile.Close()
 
 		if bloomFile != nil {
 			bloom := bloomFilter.ReadBloom(bloomFile, 0)
@@ -128,17 +130,21 @@ func (app *Application) CheckSSTableMultiple(dataPath string, key string) *Log {
 
 func (app *Application) GetOffset(path string, fileNumber string, key string, header *sstable.Header) int64 {
 	var summaryFile *os.File
+	var startKey, endKey string
 
 	if app.ConfigurationData.NumOfFiles == "multiple" {
 		summaryPath := path + "Summary-"
 		summaryPath += fileNumber
 
 		summaryFile = fileManager.Open(summaryPath)
+		defer summaryFile.Close()
+
+		startKey, endKey = sstable.ReadSummaryHeader(summaryFile, 0)
 	} else {
 		summaryFile = fileManager.Open(path)
+		defer summaryFile.Close()
+		startKey, endKey = sstable.ReadSummaryHeader(summaryFile, int64(header.SummaryOffset))
 	}
-
-	startKey, endKey := sstable.ReadSummaryHeader(summaryFile, int64(header.SummaryOffset))
 
 	if key >= startKey && key <= endKey {
 		var summary *sstable.Summary
@@ -151,11 +157,12 @@ func (app *Application) GetOffset(path string, fileNumber string, key string, he
 		var indexFile *os.File
 		if app.ConfigurationData.NumOfFiles == "multiple" {
 			indexFile = fileManager.Open(path + "Index-" + fileNumber)
+			defer indexFile.Close()
 		} else {
 			indexFile = summaryFile
 		}
-		indexStart, indexEnd := sstable.SearchIndexEntry(summary.Entries, []byte(key))
-		foundOffset := sstable.FindKeyOffset(indexFile, key, int64(indexStart.Offset), int64(indexEnd.Offset))
+		indexStart := sstable.SearchIndexEntry(summary.Entries, []byte(key))
+		foundOffset := sstable.FindKeyOffset(indexFile, key, int64(indexStart.Offset))
 
 		if foundOffset != -1 {
 			fmt.Println("Key found in SStable-", fileNumber)
@@ -172,9 +179,8 @@ func (app *Application) GetOffset(path string, fileNumber string, key string, he
 
 func GetValueFromDataFile(offset int64, path string) *Log {
 	dataFile := fileManager.Open(path)
+	defer dataFile.Close()
 	dataFile.Seek(offset, io.SeekStart)
-	//logs, _ := sstable.GetAllLogs(dataFile, "Multiple")
-	//fmt.Println(logs)
 	if dataFile != nil {
 		readLog, err := ReadLog(dataFile)
 		if err == nil {

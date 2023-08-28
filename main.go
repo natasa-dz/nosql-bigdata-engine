@@ -4,6 +4,7 @@ import (
 	application "NAiSP/Application"
 	. "NAiSP/Log"
 	menu "NAiSP/Menu"
+	test "NAiSP/Testing"
 	"sort"
 )
 
@@ -17,6 +18,7 @@ func main() {
 	//PrintLogs("single", "1", "2")
 	choiceOfConfig := menu.WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
+	test.InitializeData(app)
 	app.StartApp()
 	//----------------------------------------------------------------------------
 	//========================SSTABLE TESTS=======================================

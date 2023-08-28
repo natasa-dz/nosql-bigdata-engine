@@ -41,6 +41,7 @@ func InitializeApp(choice string) *Application {
 	return &app
 }
 func (app *Application) StartApp() {
+
 	var userInput string
 	for userInput != "X" {
 		if app.NumOfWalInserts == app.ConfigurationData.NumOfWalSegmentLogs {
@@ -62,22 +63,34 @@ func (app *Application) StartApp() {
 		} else if userInput == "2" {
 			if app.TokenBucket.MakeRequest() {
 				key := menu.GET_Menu()
+				fmt.Println("\nRead path steps:\n")
 				foundLog := app.Get(key)
-				if foundLog != nil {
-					fmt.Println("Found value: ", string(foundLog.Value))
+				if foundLog != nil && !foundLog.Tombstone {
 					app.Cache.Insert(foundLog)
+					menu.GET_Response(foundLog.Value, key)
+				} else {
+					menu.GET_Response(nil, key)
 				}
+
 			} else {
 				menu.OutOfTokensNotification()
 			}
 		} else if userInput == "3" {
 			key := menu.DELETE_Menu()
 			isDeleted := app.Delete(key)
-			if isDeleted {
-				fmt.Println("Log is succesfuly deleted")
-			} else {
-				fmt.Println("Key is not deleted")
-			}
+			menu.DELETE_Response(isDeleted)
+		} else if userInput == "4" {
+			prefix := menu.LIST_Menu()
+			foundLogs := app.PrefixScan(prefix)
+
+			menu.LIST_RANGESCAN_PaginationResponse(foundLogs, app.ConfigurationData.MenuPaginationSize)
+
+		} else if userInput == "5" {
+			minKey, maxKey := menu.RANGESCAN_Menu()
+			foundLogs := app.RangeScan(minKey, maxKey)
+
+			menu.LIST_RANGESCAN_PaginationResponse(foundLogs, app.ConfigurationData.MenuPaginationSize)
+
 		} else if userInput == "6" {
 			levelNum := menu.CompactionMenu(app.ConfigurationData.MaxNumOfLSMLevels-1, app.ConfigurationData.NumOfFiles)
 			if levelNum == 0 {
@@ -98,4 +111,16 @@ func (app *Application) StartApp() {
 func (app *Application) changeWalFile() { //fja za promenu Wal file kad stigne do konfigurabilnog broja segmenata u sebi
 	app.WalFile, _ = wal.CreateNewWAL(app.ConfigurationData.NumOfFiles)
 	app.NumOfWalInserts = 0
+}
+
+func RemoveDeleted(logs []*Log) []*Log {
+	var ret []*Log
+
+	for _, log := range logs {
+		if !log.Tombstone {
+			ret = append(ret, log)
+		}
+	}
+
+	return ret
 }

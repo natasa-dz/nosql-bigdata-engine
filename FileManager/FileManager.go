@@ -65,6 +65,13 @@ func GetFilesFromDir(directoryPath string) []string {
 	return files
 }
 
+func RemoveFilesFromDir(path string) {
+	files := GetFilesFromDir(path)
+	for _, file := range files {
+		os.Remove(path + file)
+	}
+}
+
 type FileName struct {
 	Name       string
 	Generation int
@@ -112,7 +119,7 @@ func SortFileNames(fileNamesStr []string, ascending bool) []string { //ascending
 		}
 	} else {
 		compareFunction = func(i, j int) bool {
-			return true
+			return fileNames[i].Level > fileNames[j].Level || fileNames[i].Level == fileNames[j].Level && fileNames[i].Generation < fileNames[j].Generation
 		}
 	}
 
