@@ -40,7 +40,7 @@ func PrintLogs(fileType string, generation string, level string) {
 	}
 	logs, _ := GetAllLogs(file, fileType)
 	for _, log := range logs {
-		fmt.Println("Key-", string(log.Key), "  ", "Value-", string(log.Value), log.Tombstone)
+		fmt.Println("Key-", string(log.Key), "  ", "Value-", string(log.Value), log.Tombstone, "Time-", log.Timestamp)
 	}
 }
 

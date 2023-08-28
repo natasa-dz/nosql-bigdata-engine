@@ -5,6 +5,7 @@ import (
 	wal "NAiSP/WriteAheadLog"
 	"fmt"
 	"strings"
+	"time"
 )
 
 func (app *Application) Delete(key string) bool {
@@ -14,6 +15,7 @@ func (app *Application) Delete(key string) bool {
 	if foundLog != nil { //kljuc postoji u Memtable-u: izmeniti tombstone log-a i ukloniti ga iz cache-a ako postoji
 
 		foundLog.Tombstone = true
+		foundLog.Timestamp = time.Now().Unix()
 		app.Memtable.Insert(foundLog, app.ConfigurationData.NumOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
 		wal.AppendToWal(app.WalFile, foundLog) //ubaci u Wal
 		app.DeleteFromCache(key)
@@ -24,6 +26,7 @@ func (app *Application) Delete(key string) bool {
 		isDeleted, foundLogCache := app.DeleteFromCache(key)
 		if isDeleted { //ako je kljuc pronadjen u cache-u ukloniti ga odatle i dodati novi zapis u Memtable da je log obrisan
 			foundLogCache.Tombstone = true
+			foundLogCache.Timestamp = time.Now().Unix()
 			app.Memtable.Insert(foundLogCache, app.ConfigurationData.NumOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
 			wal.AppendToWal(app.WalFile, foundLogCache) //ubaci u Wal
 			return true
@@ -39,6 +42,7 @@ func (app *Application) Delete(key string) bool {
 
 		if foundLog != nil {
 			foundLog.Tombstone = true
+			foundLog.Timestamp = time.Now().Unix()
 			app.Memtable.Insert(foundLog, app.ConfigurationData.NumOfFiles, app.ConfigurationData.NumOfSummarySegmentLogs, app.ConfigurationData.NumOfFiles)
 			wal.AppendToWal(app.WalFile, foundLog) //ubaci u Wal
 			return true

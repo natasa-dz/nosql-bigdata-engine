@@ -4,6 +4,7 @@ import (
 	application "NAiSP/Application"
 	. "NAiSP/Log"
 	menu "NAiSP/Menu"
+	. "NAiSP/SSTable"
 	"sort"
 )
 
@@ -14,18 +15,8 @@ func SortData(entries []*Log) []*Log {
 	return entries
 }
 func main() {
-
-	/*//var cms CountMinScetch
-	cms := DeserializeCMS()
-	//cms.Initialize(0.01, 0.1)
-	(*cms)[0].Add([]byte("apple"))
-
-	// Estimate counts
-	fmt.Println("Estimated count for 'apple':", (*cms)[0].Search([]byte("apple")))
-	//cmss := []CountMinScetch{cms}
-	SerializeCMS(cms)
-	*/
-	//PrintLogs("single", "1", "2")
+	PrintLogs("single", "1", "2")
+	//PrintLogs("single", "2", "1")
 	choiceOfConfig := menu.WriteAppInitializationMenu()
 	app := application.InitializeApp(choiceOfConfig)
 	app.StartApp()
