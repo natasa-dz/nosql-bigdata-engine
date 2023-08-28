@@ -90,6 +90,8 @@ func (app *Application) StartApp() {
 			}
 		} else if userInput == "7" {
 			menu.HLLMenu()
+		} else if userInput == "8" {
+			menu.CMSMenu()
 		}
 	}
 

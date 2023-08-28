@@ -1,6 +1,7 @@
 package Menu
 
 import (
+	. "NAiSP/CMS"
 	. "NAiSP/HLL"
 	. "NAiSP/Log"
 	. "NAiSP/SSTable"
@@ -37,6 +38,7 @@ func WriteMainMenu() string {
 	fmt.Println("5. List Logs by range [RANGE SCAN]")
 	fmt.Println("6. Compact level of LSM tree")
 	fmt.Println("7. HLL menu")
+	fmt.Println("8. CMS menu")
 	fmt.Println("X. Exit [EXIT]")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
@@ -68,6 +70,49 @@ func CompactionMenu(maxLevelForCompaction int, fileType string) int {
 	}
 	fmt.Println("Compacting a level....")
 	return num
+}
+
+func CMSMenu() {
+	var userInput string
+
+	for userInput != "X" {
+		var cmss = DeserializeCMS()
+		fmt.Println("===========================CMS MENU====================")
+		fmt.Println("1. Create new CMS")
+		fmt.Println("2. Add element to CMS")
+		fmt.Println("3. Get number of occurrences of element")
+		fmt.Println("X. Exit [EXIT]")
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		userInput = scanner.Text()
+		userInput = strings.ToUpper(userInput)
+		if userInput == "1" {
+			var cms CountMinScetch
+			fmt.Println("-----------------------------------------------------")
+			fmt.Println("Enter name: ")
+			scanner2 := bufio.NewScanner(os.Stdin)
+			scanner2.Scan()
+			cms.Initialize(0.1, 0.1, scanner2.Text())
+			*cmss = append(*cmss, cms)
+			SerializeCMS(cmss)
+		} else if userInput == "2" {
+			hllNum := ChooseCMS(cmss)
+			fmt.Println("-----------------------------------------------------")
+			fmt.Println("Enter new element: ")
+			scanner2 := bufio.NewScanner(os.Stdin)
+			scanner2.Scan()
+			(*cmss)[hllNum-1].Add(scanner2.Text())
+			SerializeCMS(cmss)
+		} else if userInput == "3" {
+			hllNum := ChooseCMS(cmss)
+			fmt.Println("-----------------------------------------------------")
+			fmt.Println("Enter element for search: ")
+			scanner2 := bufio.NewScanner(os.Stdin)
+			scanner2.Scan()
+			numOfEl := (*cmss)[hllNum-1].Search(scanner2.Text())
+			fmt.Println("There are", numOfEl, "occurrences")
+		}
+	}
 }
 
 func HLLMenu() {
