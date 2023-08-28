@@ -11,16 +11,16 @@ import (
 	"strings"
 )
 
-func (app *Application) RangeScan(minKey, maxKey string) []*Log {
-	aggregated := MemTable.CreateTree(2)
+func (app *Application) PrefixScan(prefix string) []*Log {
+	aggregated := MemTable.InitSkipList(10)
 
 	if app.ConfigurationData.NumOfFiles == "multiple" {
-		app.ScanSSTableMultiple(minKey, maxKey, aggregated)
+		app.PrefixScanSSTableMultiple(prefix, aggregated)
 	} else {
-		app.ScanSSTableSingle(minKey, maxKey, aggregated)
+		app.PrefixScanSSTableSingle(prefix, aggregated)
 	}
 
-	foundMemtable := app.Memtable.SearchInterval(minKey, maxKey)
+	foundMemtable := app.Memtable.SearchForPrefix(prefix)
 	for _, log := range foundMemtable {
 		l := aggregated.Search(string(log.Key))
 		if l != nil {
@@ -33,8 +33,7 @@ func (app *Application) RangeScan(minKey, maxKey string) []*Log {
 	return aggregated.GetAllLogs()
 }
 
-func (app *Application) ScanSSTableSingle(minKey, maxKey string, aggregated *MemTable.Tree) {
-
+func (app *Application) PrefixScanSSTableSingle(prefix string, aggregated *MemTable.SkipList) {
 	path := "./Data/SSTables/" + strings.Title(app.ConfigurationData.NumOfFiles) + "/"
 
 	sstableFiles := fileManager.GetFilesWithWord(path, "Data")
@@ -55,15 +54,10 @@ func (app *Application) ScanSSTableSingle(minKey, maxKey string, aggregated *Mem
 		}
 
 		startKey, endKey := sstable.ReadSummaryHeader(sstableFile, int64(header.SummaryOffset))
-		if minKey >= startKey && minKey <= endKey {
+		if (prefix >= startKey && prefix <= endKey) || (strings.HasPrefix(startKey, prefix)) {
 			summary, _ := sstable.ReadSummary(sstableFile, int64(header.SummaryOffset))
-			indexStartMinKey := sstable.SearchIndexEntry(summary.Entries, []byte(minKey))
-			foundOffsets = append(foundOffsets, sstable.FindKeyOffsetsInInterval(sstableFile, minKey, maxKey, int64(indexStartMinKey.Offset))...)
-		}
-		if maxKey >= startKey && maxKey <= endKey {
-			summary, _ := sstable.ReadSummary(sstableFile, int64(header.SummaryOffset))
-			indexStartMaxKey := sstable.SearchIndexEntry(summary.Entries, []byte(maxKey))
-			foundOffsets = append(foundOffsets, sstable.FindKeyOffsetsInInterval(sstableFile, minKey, maxKey, int64(indexStartMaxKey.Offset))...)
+			startOffset := sstable.SearchIndexEntryPrefix(summary.Entries, prefix)
+			foundOffsets = append(foundOffsets, sstable.FindKeyOffsetsWithPrefix(sstableFile, prefix, int64(startOffset.Offset))...)
 		}
 
 		for _, offset := range foundOffsets {
@@ -79,11 +73,9 @@ func (app *Application) ScanSSTableSingle(minKey, maxKey string, aggregated *Mem
 			}
 		}
 	}
-
 }
 
-func (app *Application) ScanSSTableMultiple(minKey, maxKey string, aggregated *MemTable.Tree) {
-
+func (app *Application) PrefixScanSSTableMultiple(prefix string, aggregated *MemTable.SkipList) {
 	path := "./Data/SSTables/" + strings.Title(app.ConfigurationData.NumOfFiles) + "/"
 
 	sstableFiles := fileManager.GetFilesWithWord(path, "Summary")
@@ -108,16 +100,10 @@ func (app *Application) ScanSSTableMultiple(minKey, maxKey string, aggregated *M
 			fmt.Println("Error reading index file: ", path+"Index-"+fileNumber+".bin")
 			break
 		}
-
-		if minKey >= startKey && minKey <= endKey {
+		if (prefix >= startKey && prefix <= endKey) || (strings.HasPrefix(startKey, prefix)) {
 			summary, _ := sstable.ReadSummary(ssummaryFile, 0)
-			indexStartMinKey := sstable.SearchIndexEntry(summary.Entries, []byte(minKey))
-			foundOffsets = append(foundOffsets, sstable.FindKeyOffsetsInInterval(indexFile, minKey, maxKey, int64(indexStartMinKey.Offset))...)
-		}
-		if maxKey >= startKey && maxKey <= endKey {
-			summary, _ := sstable.ReadSummary(ssummaryFile, 0)
-			indexStartMaxKey := sstable.SearchIndexEntry(summary.Entries, []byte(maxKey))
-			foundOffsets = append(foundOffsets, sstable.FindKeyOffsetsInInterval(indexFile, minKey, maxKey, int64(indexStartMaxKey.Offset))...)
+			startOffset := sstable.SearchIndexEntryPrefix(summary.Entries, prefix)
+			foundOffsets = append(foundOffsets, sstable.FindKeyOffsetsWithPrefix(indexFile, prefix, int64(startOffset.Offset))...)
 		}
 
 		dataFile := fileManager.Open(path + "Data-" + fileNumber + ".bin")

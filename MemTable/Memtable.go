@@ -5,6 +5,7 @@ import (
 	. "NAiSP/Log"
 	sstable "NAiSP/SSTable"
 	"sort"
+	"strings"
 )
 
 //trashold - granica/prag zapisa (< 100%)
@@ -80,6 +81,18 @@ func (table *Memtable) SearchInterval(minKey, maxKey string) []*Log {
 	logs := table.tableStruct.GetAllLogs()
 	for _, log := range logs {
 		if string(log.Key) >= minKey && string(log.Key) <= maxKey {
+			ret = append(ret, log)
+		}
+	}
+
+	return ret
+}
+
+func (table *Memtable) SearchForPrefix(prefix string) []*Log {
+	var ret []*Log
+	logs := table.tableStruct.GetAllLogs()
+	for _, log := range logs {
+		if strings.HasPrefix(string(log.Key), prefix) {
 			ret = append(ret, log)
 		}
 	}

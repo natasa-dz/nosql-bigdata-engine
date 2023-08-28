@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"io"
 	"os"
+	"strings"
 )
 
 type Summary struct {
@@ -199,6 +200,30 @@ func SearchIndexEntry(entries []*IndexEntry, key []byte) *IndexEntry {
 
 	// If the loop terminates without finding an exact match, 'low' will point to the closest larger element.
 	// We return the previous index entry as the closest match.
+
+	return entries[low-1]
+}
+
+func SearchIndexEntryPrefix(entries []*IndexEntry, prefix string) *IndexEntry {
+	low, high := 0, len(entries)-1
+	for low <= high {
+		mid := (low + high) / 2
+		currentKey := entries[mid].Key
+
+		if currentKey == prefix {
+			// Found an exact match
+			return entries[mid]
+		} else if strings.HasPrefix(currentKey, prefix) {
+			// Has prefix
+			return entries[mid]
+		} else if prefix < currentKey {
+			// Prefix is smaller, search in the left half
+			high = mid - 1
+		} else {
+			// Prefix is larger, search in the right half
+			low = mid + 1
+		}
+	}
 
 	return entries[low-1]
 }

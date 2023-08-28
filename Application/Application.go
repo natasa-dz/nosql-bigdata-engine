@@ -78,6 +78,12 @@ func (app *Application) StartApp() {
 			} else {
 				fmt.Println("Key is not deleted")
 			}
+		} else if userInput == "4" {
+			prefix := menu.LIST_Menu()
+			foundLogs := app.PrefixScan(prefix)
+
+			menu.LIST_RANGESCAN_PaginationResponse(foundLogs, app.ConfigurationData.MenuPaginationSize)
+			
 		} else if userInput == "5" {
 			minKey, maxKey := menu.RANGESCAN_Menu()
 			foundLogs := app.RangeScan(minKey, maxKey)

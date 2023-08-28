@@ -13,7 +13,7 @@ import (
 
 func WriteAppInitializationMenu() string {
 	var retVal string
-	fmt.Println("You started app. Do you want to use custom configuration, or you want to use configuration that we made?")
+	fmt.Println("\nYou started app. Do you want to use custom configuration, or you want to use configuration that we made?")
 	for true {
 		fmt.Println("Type \"custom\"/\"premade\"")
 		scanner := bufio.NewScanner(os.Stdin)
@@ -28,7 +28,7 @@ func WriteAppInitializationMenu() string {
 }
 
 func WriteMainMenu() string {
-	fmt.Println("===========================MENU====================")
+	fmt.Println("\n===========================MENU====================")
 	fmt.Println("1. Insert new Log (key, value) [PUT]")
 	fmt.Println("2. Search for Log [GET]")
 	fmt.Println("3. Delete Log [DELETE]")
@@ -71,7 +71,7 @@ func CompactionMenu(maxLevelForCompaction int, fileType string) int {
 func PUT_Menu() ([]byte, []byte) {
 	var key, value []byte
 	for true {
-		fmt.Println("Enter key: ")
+		fmt.Println("\nEnter key: ")
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			key = scanner.Bytes()
@@ -93,21 +93,21 @@ func PUT_Menu() ([]byte, []byte) {
 
 func PUT_Response(success bool) {
 	if success {
-		fmt.Println("Entering was successful")
+		fmt.Println("\n\tEntering was successful")
 		return
 	}
-	fmt.Println("Something went wrong...Log was not inserted")
+	fmt.Println("\n\tSomething went wrong...Log was not inserted")
 }
 
 func GET_Menu() string {
 	var key string
 	for true {
-		fmt.Println("Enter key: ")
+		fmt.Println("\nEnter key: ")
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			key = scanner.Text()
 			if key == "" {
-				fmt.Println("Key can not be empty")
+				fmt.Println("\n\tKey can not be empty!")
 				continue
 			}
 			break
@@ -118,9 +118,9 @@ func GET_Menu() string {
 
 func GET_Response(result []byte, key string) {
 	if result == nil {
-		fmt.Println("There is no such key")
+		fmt.Println("\n\tThere is no such key")
 	} else {
-		fmt.Println("===Result for GET===")
+		fmt.Println("\n===Result for GET===")
 		fmt.Println("Key : ", key)
 		fmt.Println("Value: ", result)
 	}
@@ -129,12 +129,12 @@ func GET_Response(result []byte, key string) {
 func DELETE_Menu() string {
 	var key string
 	for true {
-		fmt.Println("Enter key: ")
+		fmt.Println("\nEnter key: ")
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			key = scanner.Text()
 			if key == "" {
-				fmt.Println("Key can not be empty")
+				fmt.Println("\n\tKey can not be empty")
 				continue
 			}
 		}
@@ -154,12 +154,12 @@ func DELETE_Response(success bool) {
 func LIST_Menu() string {
 	var prefix string
 	for true {
-		fmt.Println("Enter prefix: ")
+		fmt.Println("\nEnter prefix: ")
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			prefix = scanner.Text()
 			if prefix == "" {
-				fmt.Println("Prefix can not be empty")
+				fmt.Println("\n\tPrefix can not be empty")
 				continue
 			}
 		}
@@ -172,7 +172,7 @@ func RANGESCAN_Menu() (string, string) {
 	var minKey string
 	var maxKey string
 	for true {
-		fmt.Println("Enter min key: ")
+		fmt.Println("\nEnter min key: ")
 		scanner := bufio.NewScanner(os.Stdin)
 		if scanner.Scan() {
 			minKey = scanner.Text()
@@ -183,7 +183,7 @@ func RANGESCAN_Menu() (string, string) {
 			maxKey = scanner2.Text()
 		}
 		if minKey == "" || maxKey == "" || maxKey < minKey {
-			fmt.Println("Keys were not entered the right way")
+			fmt.Println("\n\tKeys were not entered the right way")
 			continue
 		}
 		break
@@ -204,7 +204,7 @@ func LIST_RANGESCAN_PaginationResponse(results []*Log, amountOfDataPerPage int) 
 			input = paginationMenu(totalNumOfPages)
 			if input == "NEXT" {
 				if numOfPage+1 > totalNumOfPages { //poslednja strana nema dalje
-					fmt.Println("You have reached last page")
+					fmt.Println("\n\tYou have reached last page\n")
 					continue
 				}
 				numOfPage++
@@ -218,7 +218,7 @@ func LIST_RANGESCAN_PaginationResponse(results []*Log, amountOfDataPerPage int) 
 				}
 			} else if input == "PREVIOUS" {
 				if numOfPage-1 < 1 {
-					fmt.Println("You are at first page")
+					fmt.Println("\n\tYou are at first page")
 					continue
 				}
 				numOfPage--
@@ -244,12 +244,12 @@ func LIST_RANGESCAN_PaginationResponse(results []*Log, amountOfDataPerPage int) 
 }
 
 func printPage(results []*Log, numOfPage int) {
-	fmt.Println("=====================PAGE" + strconv.Itoa(numOfPage) + "===================")
+	fmt.Println("\n=====================PAGE" + strconv.Itoa(numOfPage) + "===================")
 	for i, data := range results {
-		fmt.Println(strconv.Itoa(i+1)+".", "Key: ", string(data.Key))
-		fmt.Println("Value: ", string(data.Value))
+		fmt.Println("\t", strconv.Itoa(i+1)+".", "Key: ", string(data.Key))
+		fmt.Println("\t", "Value: ", string(data.Value))
 	}
-	fmt.Println("============================================")
+	fmt.Println("============================================\n")
 }
 
 func paginationMenu(totalNumOfPages int) string {
@@ -263,7 +263,7 @@ func paginationMenu(totalNumOfPages int) string {
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
 		input = scanner.Text()
-		fmt.Println("--------------------------------------------------------")
+		//fmt.Println("--------------------------------------------------------")
 		notDone := strings.ToUpper(input) != "NEXT" && strings.ToUpper(input) != "PREVIOUS" && !isValidInteger(input, totalNumOfPages) && strings.ToUpper(input) != "X"
 		if notDone {
 			fmt.Println("Wrong option try again")

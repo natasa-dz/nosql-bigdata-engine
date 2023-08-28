@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"io"
 	"os"
+	"strings"
 )
 
 type IndexEntry struct {
@@ -143,6 +144,31 @@ func FindKeyOffsetsInInterval(file *os.File, keyMin string, keyMax string, offse
 		offsetStart, _ = file.Seek(0, io.SeekCurrent)
 
 		if loaded.Key >= keyMax {
+			break
+		}
+	}
+
+	return foundOffsets
+}
+
+func FindKeyOffsetsWithPrefix(file *os.File, prefix string, offsetStart int64) []int64 {
+	var foundOffsets []int64
+
+	for true {
+
+		loaded, _ := ReadIndexEntry(file, offsetStart)
+
+		if loaded == nil {
+			break
+		}
+
+		if strings.HasPrefix(loaded.Key, prefix) {
+			foundOffsets = append(foundOffsets, int64(loaded.Offset))
+		}
+
+		offsetStart, _ = file.Seek(0, io.SeekCurrent)
+
+		if loaded.Key >= prefix {
 			break
 		}
 	}
