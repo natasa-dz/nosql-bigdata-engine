@@ -1,68 +1,45 @@
 package main
 
 import (
-	"bufio"
+	"encoding/binary"
 	"fmt"
-	"log"
-	"os"
-	"strings"
+	"math/rand"
+	"time"
 )
 
-func ReadFile(fileName string) []string {
-	file, err := os.Open(fileName)
-	if err != nil {
-		log.Fatal(err)
+func getRandomData() (out [][]byte, intout []uint32) {
+	for i := 0; i < 200; i++ {
+		rand.Seed(time.Now().UnixNano())
+		i := rand.Uint32()
+		b := make([]byte, 4)
+		binary.LittleEndian.PutUint32(b, i)
+		out = append(out, b)
+		intout = append(intout, i)
 	}
-	defer file.Close()
-
-	//words := list.New()
-	var words []string
-
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanWords)
-	for scanner.Scan() {
-		word := scanner.Text()
-		if strings.Contains(word, ".") ||
-			strings.Contains(word, ",") {
-			word = strings.ReplaceAll(word, ".", "")
-			word = strings.ReplaceAll(word, ",", "")
-		}
-
-		word = strings.ToLower(word)
-
-		//words.PushBack(word)
-		words = append(words, word)
-
-	}
-
-	errS := scanner.Err()
-	if errS != nil {
-		log.Fatal(errS)
-	}
-
-	//wordsSlice := make([]string, words.Len())
-
-	return words
+	return
 }
-
-func main() {
-	words1 := ReadFile("text.txt")
-	var hll HLL
-	hll.InitializeSimHash(16)
-	fmt.Println(len(words1))
-	for i := 0; i < len(words1); i++ {
-		hll.add(words1[i])
+func classicCountDistinct(input []uint32) int {
+	m := map[uint32]struct{}{}
+	for _, i := range input {
+		if _, ok := m[i]; !ok {
+			m[i] = struct{}{}
+		}
 	}
+	return len(m)
+}
+func main() {
 
-	est := hll.Estimate()
-
-	//for i := 0; i < int(hll.m); i++ {
-	//	if hll.reg[i] != 0 {
-	//		fmt.Println(hll.reg[i])
-	//	}
-	//
-	//}
-
-	fmt.Println(est)
+	bs, is := getRandomData()
+	dt := classicCountDistinct(is)
+	var hll2 HLL
+	hll2.InitializeSimHash(6)
+	fmt.Println("words", dt)
+	for _, b := range bs {
+		hll2.add(string(b))
+	}
+	est2 := hll2.Estimate()
+	fmt.Println("estimated", est2)
+	hll2.Name = "HLL1"
+	//people := []HLL{hll2}
 
 }
