@@ -143,7 +143,7 @@ func FindKeyOffsetsInInterval(file *os.File, keyMin string, keyMax string, offse
 
 		offsetStart, _ = file.Seek(0, io.SeekCurrent)
 
-		if loaded.Key >= keyMax {
+		if loaded.Key > keyMax {
 			break
 		}
 	}
