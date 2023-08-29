@@ -145,8 +145,6 @@ func HLLMenu() {
 			scanner2 := bufio.NewScanner(os.Stdin)
 			scanner2.Scan()
 			(*hlls)[hllNum-1].Add(scanner2.Text())
-			numOfEl := (*hlls)[hllNum-1].Estimate()
-			fmt.Println("Estimating that it has ", math.Round(numOfEl), "elements")
 			Serialize(hlls)
 		} else if userInput == "3" {
 			hllNum := ChooseHLL(hlls)
