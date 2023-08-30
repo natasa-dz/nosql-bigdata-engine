@@ -41,7 +41,6 @@ func InitializeApp(choice string) *Application {
 	return &app
 }
 func (app *Application) StartApp() {
-
 	var userInput string
 	for userInput != "X" {
 		if app.NumOfWalInserts == app.ConfigurationData.NumOfWalSegmentLogs {

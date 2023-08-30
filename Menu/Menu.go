@@ -145,8 +145,6 @@ func HLLMenu() {
 			scanner2 := bufio.NewScanner(os.Stdin)
 			scanner2.Scan()
 			(*hlls)[hllNum-1].Add(scanner2.Text())
-			numOfEl := (*hlls)[hllNum-1].Estimate()
-			fmt.Println("Estimating that it has ", math.Round(numOfEl), "elements")
 			Serialize(hlls)
 		} else if userInput == "3" {
 			hllNum := ChooseHLL(hlls)
@@ -208,9 +206,9 @@ func GET_Response(result []byte, key string) {
 	if result == nil {
 		fmt.Println("\n\tThere is no such key")
 	} else {
-		fmt.Println("\n\t===Result for GET===")
-		fmt.Println("\tKey : ", key)
-		fmt.Println("\tValue: ", string(result))
+		fmt.Println("\n===Result for GET===")
+		fmt.Println("Key : ", key)
+		fmt.Println("Value: ", string(result))
 	}
 }
 
@@ -233,10 +231,10 @@ func DELETE_Menu() string {
 
 func DELETE_Response(success bool) {
 	if success {
-		fmt.Println("\n\tDeleting was successful")
+		fmt.Println("\nDeleting was successful")
 		return
 	}
-	fmt.Println("\n\tSomething went wrong...Log was not deleted")
+	fmt.Println("\nSomething went wrong...Log was not deleted")
 }
 
 func LIST_Menu() string {

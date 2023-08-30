@@ -8,9 +8,9 @@
   "SkipListMaxHeight": 10,
   "NumOfFiles": "single",
   "TokenBucketSize": 2,
-  "TokenBucketRefreshTime": 10000,
+  "TokenBucketRefreshTime": 100,
   "CacheSize": 2,
-  "MenuPaginationSize": 2,
+  "MenuPaginationSize": 1,
   "MaxNumOfLSMLevels": 4,
   "MaxNumOfSSTablesPerLevel": 2
 }

@@ -498,6 +498,8 @@ func SizeTieredCompactionSingle(level *int, summaryBlockSize *int, levelTrashold
 	}
 	WriteToTxtFile(maxGeneration+1, *level+1, "TOC", fileType, TOCData, nil)
 	os.Remove("./Data/SSTables/Single/Index-" + strconv.Itoa(maxGeneration+1) + "-" + strconv.Itoa(*level+1) + ".bin")
+
+	mainFile.Close()
 	DeleteFilesFromLevel(*level, fileType)
 	if maxGeneration+1 == *levelTrashold && *level+1 < *maxLSMLevel {
 		*level++
